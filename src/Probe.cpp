@@ -19,11 +19,12 @@ QString Probe::serverVersion(const QString &host, unsigned port, const QString &
     MYSQL *m = mysql_init(nullptr);
     unsigned timeout = 10;
     mysql_options(m, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
-    if (ssl) { // ponytail: TLS without cert verification (PLAN "SSL On"); add verify option if needed
-        my_bool on = 1, verify = 0;
-        mysql_options(m, MYSQL_OPT_SSL_ENFORCE, &on);
-        mysql_options(m, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &verify);
-    }
+    // Connector/C 3.4 verifies the server cert by default, which also rejects plaintext servers.
+    // Policy (PLAN): SSL On = encrypted, cert NOT verified; SSL Off = plaintext allowed.
+    // ponytail: no cert verification ever; add a "Verify certificate" option + CA field if needed.
+    my_bool verify = 0, enforce = ssl ? 1 : 0;
+    mysql_optionsv(m, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &verify);
+    mysql_optionsv(m, MYSQL_OPT_SSL_ENFORCE, &enforce);
     if (!mysql_real_connect(m, host.toUtf8().constData(), user.toUtf8().constData(),
                             pass.toUtf8().constData(), db.toUtf8().constData(), port, nullptr, 0)) {
         QString e = "ERROR: " + QString::fromUtf8(mysql_error(m));

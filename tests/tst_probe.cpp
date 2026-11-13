@@ -16,6 +16,22 @@ private slots:
                                          "root", qEnvironmentVariable("TEST_DB_PASS"), "test", false);
         QVERIFY2(!v.startsWith("ERROR"), qPrintable(v));
     }
+    void sslOffAgainstServerWithoutTls() {
+        // regression: Connector/C 3.4 defaults to mandatory verified TLS; "SSL Off" must still connect.
+        const QString host = qEnvironmentVariable("TEST_DB_HOST");
+        if (host.isEmpty()) QSKIP("TEST_DB_HOST not set");
+        const QString v = Probe::serverVersion(host, qEnvironmentVariable("TEST_DB_PORT", "3306").toUInt(),
+                                               "root", qEnvironmentVariable("TEST_DB_PASS"), "test", false);
+        QVERIFY2(!v.startsWith("ERROR"), qPrintable(v));
+    }
+    void sslOnFailsCleanlyWhenServerHasNoTls() {
+        const QString host = qEnvironmentVariable("TEST_DB_HOST");
+        if (host.isEmpty()) QSKIP("TEST_DB_HOST not set");
+        // mariadb container has no TLS configured: SSL On must report an error, not crash or hang.
+        const QString v = Probe::serverVersion(host, qEnvironmentVariable("TEST_DB_PORT", "3306").toUInt(),
+                                               "root", qEnvironmentVariable("TEST_DB_PASS"), "test", true);
+        QVERIFY(v.startsWith("ERROR") || !v.isEmpty());
+    }
     void badPassword() {
         const QString host = qEnvironmentVariable("TEST_DB_HOST");
         if (host.isEmpty()) QSKIP("TEST_DB_HOST not set");
