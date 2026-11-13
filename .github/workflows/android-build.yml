@@ -33,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ninja-build qt6-base-dev qt6-declarative-dev \
-            qt6-declarative-dev-tools libmariadb-dev libssl-dev libgl1-mesa-dev
+            qt6-declarative-dev-tools libqt6sql6-sqlite libmariadb-dev libssl-dev libgl1-mesa-dev
       - name: Rust ssh_bridge tests + host staticlib
         working-directory: rust/ssh_bridge
         run: cargo test && cargo build --release
@@ -43,7 +43,7 @@ jobs:
           TEST_DB_PASS: testpass
         run: |
           cmake -S . -B build-test -GNinja -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build-test --target tst_probe
+          cmake --build build-test
           QT_QPA_PLATFORM=offscreen ctest --test-dir build-test --output-on-failure
 
   build-android:

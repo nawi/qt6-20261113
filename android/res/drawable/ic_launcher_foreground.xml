@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="-3" android:translateY="-2">
+        <!-- cylinder body -->
+        <path android:fillColor="#1FA79A"
+            android:pathData="M26,40 L26,66 C26,71 36,75 48,75 C60,75 70,71 70,66 L70,40 Z" />
+        <!-- middle band -->
+        <path android:strokeColor="#0F6F66" android:strokeWidth="2.5" android:strokeLineCap="round"
+            android:pathData="M26,53 C26,58 36,62 48,62 C60,62 70,58 70,53" />
+        <!-- top cap -->
+        <path android:fillColor="#7FE0D4"
+            android:pathData="M26,40 C26,35 36,31 48,31 C60,31 70,35 70,40 C70,45 60,49 48,49 C36,49 26,45 26,40 Z" />
+        <!-- connection link + node -->
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round"
+            android:pathData="M64,64 L77,75" />
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M73,76 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+    </group>
+</vector>
