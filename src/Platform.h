@@ -5,7 +5,7 @@
 // Android integration (dynamic accent, system bar insets/appearance). No-ops on desktop.
 class Platform : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QVariantMap insets READ insets NOTIFY insetsChanged)  // dp: top,bottom,left,right
+    Q_PROPERTY(QVariantMap insets READ insets NOTIFY insetsChanged)  // dp: top,bottom,left,right,ime
     Q_PROPERTY(QString debugStart READ debugStart CONSTANT)           // desktop preview only
 public:
     explicit Platform(QObject *parent = nullptr);
@@ -17,5 +17,5 @@ signals:
     void insetsChanged();
 private:
     void refresh();
-    QVariantMap m_insets{{"top", 0}, {"bottom", 0}, {"left", 0}, {"right", 0}};
+    QVariantMap m_insets{{"top", 0}, {"bottom", 0}, {"left", 0}, {"right", 0}, {"ime", 0}};
 };

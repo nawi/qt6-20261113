@@ -33,6 +33,7 @@ QtObject {
     readonly property real safeTop: platform ? platform.insets.top : 0
     readonly property real safeBottom: platform ? platform.insets.bottom : 0
     readonly property real safeLeft: platform ? platform.insets.left : 0
+    readonly property real safeIme: platform ? platform.insets.ime : 0   // on-screen keyboard height
     readonly property real safeRight: platform ? platform.insets.right : 0
 
     readonly property var labelColors: ["#007AFF", "#34C759", "#FF9500", "#FF3B30",

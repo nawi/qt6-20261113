@@ -30,7 +30,8 @@ void Platform::refresh()
     if (p.size() < 4) return;
     const qreal d = QGuiApplication::primaryScreen()->devicePixelRatio();
     const QVariantMap m{{"top", p[0].toInt() / d}, {"bottom", p[1].toInt() / d},
-                        {"left", p[2].toInt() / d}, {"right", p[3].toInt() / d}};
+                        {"left", p[2].toInt() / d}, {"right", p[3].toInt() / d},
+                        {"ime", p.size() > 4 ? p[4].toInt() / d : 0.0}};
     if (m != m_insets) { m_insets = m; emit insetsChanged(); }
 #endif
 }

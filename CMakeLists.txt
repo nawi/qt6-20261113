@@ -42,7 +42,7 @@ qt_add_qml_module(NawiDBMan
     QML_FILES ${QML_SINGLETONS}
         qml/Main.qml qml/Icon.qml qml/NavBar.qml qml/NavButton.qml qml/Group.qml qml/Cell.qml
         qml/FieldCell.qml qml/Segmented.qml qml/IOSSwitch.qml qml/PrimaryButton.qml qml/ActionSheet.qml
-        qml/Toast.qml qml/Onboarding.qml qml/ConnectionList.qml qml/ConnectionForm.qml qml/SettingsPage.qml
+        qml/Toast.qml qml/FormFlickable.qml qml/Onboarding.qml qml/ConnectionList.qml qml/ConnectionForm.qml qml/SettingsPage.qml
 )
 target_link_libraries(NawiDBMan PRIVATE Qt6::Quick Qt6::QuickControls2 core)
 

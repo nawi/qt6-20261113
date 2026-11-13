@@ -39,14 +39,9 @@ Rectangle {
         function onTestFinished(ok, message) { page.testOk = ok; page.testMessage = message }
     }
 
-    Flickable {
+    FormFlickable {
         id: flick
         anchors { fill: parent; topMargin: nav.height }
-        contentHeight: col.height + Theme.safeBottom + 48
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        interactive: contentHeight > height
-        onMovementStarted: Qt.inputMethod.hide()
 
         Column {
             id: col
