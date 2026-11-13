@@ -1,4 +1,7 @@
 INSTRUCTION.md
-docs/*.mdbuild/
+docs/*.md
+aqtinstall.log
+build/
+build-test/
 deps/
 rust/ssh_bridge/target/
