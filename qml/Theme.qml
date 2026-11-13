@@ -23,7 +23,8 @@ QtObject {
     readonly property color sep: dark ? "#38383A" : "#D1D1D6"
     readonly property color danger: dark ? "#FF453A" : "#FF3B30"
     readonly property color success: dark ? "#32D74B" : "#34C759"
-    readonly property color textOnAccent: "#FFFFFF"
+    // pick readable text color for filled accent buttons (dynamic color can be very light)
+    readonly property color textOnAccent: (0.299 * accent.r + 0.587 * accent.g + 0.114 * accent.b) > 0.6 ? "#101114" : "#FFFFFF"
 
     readonly property real radius: 12
     readonly property real margin: 16
