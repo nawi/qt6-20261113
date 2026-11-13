@@ -1,5 +1,6 @@
 INSTRUCTION.md
 docs/*.md
+docs/.env
 aqtinstall.log
 build/
 build-test/
