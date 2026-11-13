@@ -1,2 +1,4 @@
 INSTRUCTION.md
-docs/*.md
+docs/*.mdbuild/
+deps/
+rust/ssh_bridge/target/

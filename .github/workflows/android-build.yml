@@ -14,9 +14,42 @@ env:
   ANDROID_PLATFORM: 'android-36'
 
 jobs:
+  unit-tests:
+    name: Unit tests (desktop + MariaDB)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: testpass
+          MARIADB_DATABASE: test
+        ports: [ '3306:3306' ]
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build qt6-base-dev qt6-declarative-dev \
+            qt6-declarative-dev-tools libmariadb-dev libssl-dev libgl1-mesa-dev
+      - name: Rust ssh_bridge tests + host staticlib
+        working-directory: rust/ssh_bridge
+        run: cargo test && cargo build --release
+      - name: Build + run QtTest
+        env:
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PASS: testpass
+        run: |
+          cmake -S . -B build-test -GNinja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-test --target tst_probe
+          QT_QPA_PLATFORM=offscreen ctest --test-dir build-test --output-on-failure
+
   build-android:
     name: Build APK (arm64-v8a)
     runs-on: ubuntu-latest
+    needs: unit-tests
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +75,32 @@ jobs:
           arch: android_arm64_v8a
           modules: ''
           cache: true
+
+      - name: Cache native deps (OpenSSL + MariaDB Connector/C)
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: deps/out
+          key: deps-arm64-${{ hashFiles('scripts/build-deps.sh') }}-ndk${{ env.ANDROID_NDK_VERSION }}
+
+      - name: Build native deps
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/${{ env.ANDROID_NDK_VERSION }}
+        run: ./scripts/build-deps.sh
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            rust/ssh_bridge/target
+          key: cargo-${{ hashFiles('rust/ssh_bridge/Cargo.lock', 'rust/ssh_bridge/Cargo.toml') }}
+
+      - name: Build ssh_bridge (Rust)
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/${{ env.ANDROID_NDK_VERSION }}
+        run: ./scripts/build-rust.sh
 
       - name: Prepare signing key
         env:

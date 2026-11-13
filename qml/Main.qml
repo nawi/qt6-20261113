@@ -7,8 +7,11 @@ ApplicationWindow {
 
     Label {
         anchors.centerIn: parent
-        text: "NawiDBMan\nQt " + Qt.platform.os
+        width: parent.width - 48
         horizontalAlignment: Text.AlignHCenter
-        font.pixelSize: 28
+        wrapMode: Text.Wrap
+        font.pixelSize: 18
+        text: "NawiDBMan\n\nMariaDB Connector/C: " + buildInfo.mariadb
+              + "\n" + buildInfo.openssl + "\n" + buildInfo.ssh
     }
 }
