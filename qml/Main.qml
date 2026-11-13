@@ -8,6 +8,10 @@ ApplicationWindow {
     title: "NawiDBMan"
     color: Theme.bg
 
+    // Qt >= 6.9 pads contentItem by the safe area automatically. We handle insets ourselves
+    // (Theme.safe*, incl. keyboard), so disable it to avoid double insets.
+    topPadding: 0; bottomPadding: 0; leftPadding: 0; rightPadding: 0
+
     Component.onCompleted: { Theme.settings = appSettings; Theme.platform = platform }
     Connections {
         target: Theme
