@@ -48,9 +48,12 @@ ApplicationWindow {
 
     Toast { id: toast; y: win.height - height - Theme.safeBottom - 24; z: 10 }
 
-    // Android back: pop instead of quitting
-    onClosing: function(close) {
-        if (stack.depth > 1) { close.accepted = false; stack.pop() }
+    // Android Back (Qt >= 6.12 no longer sends Window.onClosing; it moves the task to background).
+    // Window-level Shortcut fires regardless of focus; "Back" (not StandardKey.Back) avoids Backspace/Alt+Left.
+    Shortcut {
+        sequences: ["Back"]
+        enabled: Qt.platform.os === "android" && stack.depth > 1
+        onActivated: stack.pop()
     }
 
     // desktop preview helper: NAWI_START=form|formssh|settings
