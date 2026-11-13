@@ -5,8 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Sql Concurrent Quick QuickControls2 Test)
-qt_standard_project_setup(REQUIRES 6.8)
+# Android builds must use Qt 6.12 (CI). Desktop (unit tests / UI preview) accepts any recent Qt 6.
+if(ANDROID)
+    set(NAWI_QT_MIN 6.12)
+else()
+    set(NAWI_QT_MIN 6.8)
+endif()
+find_package(Qt6 ${NAWI_QT_MIN} REQUIRED COMPONENTS Core Sql Concurrent Quick QuickControls2 Test)
+qt_standard_project_setup(REQUIRES ${NAWI_QT_MIN})
 
 # --- native deps: MariaDB Connector/C + OpenSSL + Rust ssh_bridge ---------------
 if(ANDROID)
@@ -49,6 +55,7 @@ target_link_libraries(NawiDBMan PRIVATE Qt6::Quick Qt6::QuickControls2 core)
 set_target_properties(NawiDBMan PROPERTIES
     QT_ANDROID_PACKAGE_NAME "com.nawi.dbman"
     QT_ANDROID_APP_NAME "NawiDBMan"
+    QT_ANDROID_APP_ICON "@mipmap/ic_launcher"
     QT_ANDROID_MIN_SDK_VERSION 31
     QT_ANDROID_TARGET_SDK_VERSION 35
     QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"

@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  QT_VERSION: '6.8.3'
-  ANDROID_NDK_VERSION: '26.1.10909125'
+  QT_VERSION: '6.12.0'
+  ANDROID_NDK_VERSION: '27.2.12479018'
   ANDROID_BUILD_TOOLS: '36.0.0'
   ANDROID_PLATFORM: 'android-36'
 
@@ -29,11 +29,15 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
+      - name: Install Qt (desktop)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build qt6-base-dev qt6-declarative-dev \
-            qt6-declarative-dev-tools libqt6sql6-sqlite libmariadb-dev libssl-dev libgl1-mesa-dev
+          sudo apt-get install -y --no-install-recommends ninja-build libmariadb-dev libssl-dev libgl1-mesa-dev libxkbcommon-dev
       - name: Rust ssh_bridge tests + host staticlib
         working-directory: rust/ssh_bridge
         run: cargo test && cargo build --release
@@ -56,7 +60,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - uses: android-actions/setup-android@v3
         with:
