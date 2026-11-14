@@ -6,3 +6,4 @@ build/
 build-test/
 deps/
 rust/ssh_bridge/target/
+out/
