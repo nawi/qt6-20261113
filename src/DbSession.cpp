@@ -107,6 +107,10 @@ void DbSession::buildConfig(const QVariantMap &conn, const QString &host, int po
     m_cfg.password = conn.value("password").toString();
     m_cfg.database = conn.value("database").toString().trimmed();
     m_cfg.ssl = conn.value("ssl").toBool();
+    if (conn.value("mode").toInt() == 2) {
+        m_cfg.httpUrl = conn.value("httpUrl").toString().trimmed();
+        m_cfg.httpToken = conn.value("httpToken").toString();
+    }
     m_cfg.connectTimeout = 10;
     m_cfg.readTimeout = qBound(5, Db::get("queryTimeout", "300").toInt(), 3600);
 }

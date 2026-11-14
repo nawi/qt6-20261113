@@ -1,4 +1,7 @@
 #include "DbClient.h"
+#include "HttpAgent.h"
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QElapsedTimer>
 #include <QRegularExpression>
 #include <QStringDecoder>
@@ -35,8 +38,10 @@ QString DbClient::quoteId(const QString &name)
 QString DbClient::escape(const QString &s) const
 {
     if (!m) {
+        // HTTP agent mode: no live handle. Assumes default sql_mode (backslash escapes on).
         QString r = s;
-        r.replace('\\', "\\\\").replace('\'', "\\'");
+        r.replace('\\', "\\\\").replace('\'', "\\'").replace(QChar(0), "\\0")
+            .replace('\n', "\\n").replace('\r', "\\r").replace(QChar(0x1a), "\\Z");
         return r;
     }
     const QByteArray in = s.toUtf8();
@@ -117,6 +122,8 @@ bool DbClient::open(const Config &c, QString *error)
     m_config.user = c.user.trimmed();
     m_config.database = c.database.trimmed();
 
+    if (!m_config.httpUrl.isEmpty()) return openHttp(error);
+
     QString firstError;
     if (!connectWithCharset("utf8mb4", &firstError)) {
         // Old servers may not know utf8mb4 (error 2019). Retry with utf8.
@@ -146,6 +153,7 @@ bool DbClient::open(const Config &c, QString *error)
 
 void DbClient::close()
 {
+    m_http = false;
     if (m) {
         mysql_close(static_cast<MYSQL *>(m));
         m = nullptr;
@@ -208,6 +216,7 @@ QueryResult DbClient::query(const QString &sql, int limit)
     QueryResult out;
     QElapsedTimer timer;
     timer.start();
+    if (m_http) return queryHttp(sql, limit);
     if (!m) {
         out.error = QObject::tr("Not connected.");
         out.errorCode = -1;
@@ -318,5 +327,77 @@ QVariantMap DbClient::test(const Config &c)
     for (const auto &g : groups)
         if (counts.value(g.first).toInt() < 0) warnings << g.second;
     out["warnings"] = warnings;
+    return out;
+}
+
+// ---- HTTP agent transport ---------------------------------------------------------
+namespace {
+QJsonObject agentBody(const DbClient::Config &c, const QString &action)
+{
+    return {{"action", action},
+            {"db", QJsonObject{{"host", c.host}, {"port", int(c.port)}, {"user", c.user},
+                               {"pass", c.password}, {"name", c.database}}},
+            {"timeout", c.readTimeout > 0 ? c.readTimeout : 300}};
+}
+}
+
+bool DbClient::openHttp(QString *error)
+{
+    QJsonObject reply;
+    QString err;
+    const int t = (m_config.readTimeout > 0 ? m_config.readTimeout : 300);
+    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, agentBody(m_config, "ping"), t, &reply, &err)) {
+        if (error) *error = err;
+        return false;
+    }
+    if (!reply.value("ok").toBool()) {
+        const QJsonObject e = reply.value("error").toObject();
+        if (error) *error = friendlyError(e.value("code").toInt(), e.value("msg").toString());
+        return false;
+    }
+    m_http = true;
+    m_version = reply.value("version").toString();
+    m_threadId = 0;   // KILL QUERY is not possible through the agent (one connection per request)
+    m_sessionLimit = -1;
+    return true;
+}
+
+QueryResult DbClient::queryHttp(const QString &sql, int limit)
+{
+    QueryResult out;
+    QElapsedTimer timer;
+    timer.start();
+    QJsonObject body = agentBody(m_config, "query");
+    body["sql"] = sql;
+    body["limit"] = limit;
+    QJsonObject reply;
+    QString err;
+    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, body,
+                         (m_config.readTimeout > 0 ? m_config.readTimeout : 300) + 15, &reply, &err)) {
+        out.error = err;
+        out.errorCode = 2013;
+        return out;
+    }
+    if (!reply.value("ok").toBool()) {
+        const QJsonObject e = reply.value("error").toObject();
+        out.errorCode = e.value("code").toInt(-1);
+        out.error = friendlyError(out.errorCode, e.value("msg").toString());
+        return out;
+    }
+    for (const QJsonValue &cv : reply.value("columns").toArray()) {
+        const QJsonObject co = cv.toObject();
+        out.columns << ResultColumn{co.value("name").toString(), co.value("type").toString(),
+                                    co.value("binary").toBool()};
+    }
+    for (const QJsonValue &rv : reply.value("rows").toArray()) {
+        QVariantList row;
+        for (const QJsonValue &v : rv.toArray())
+            row << (v.isNull() ? QVariant() : QVariant(v.toString()));
+        out.rows << row;
+    }
+    out.affected = qint64(reply.value("affected").toDouble());
+    out.insertId = qint64(reply.value("insertId").toDouble());
+    out.truncated = reply.value("truncated").toBool();
+    out.elapsedMs = timer.elapsed();
     return out;
 }

@@ -149,14 +149,10 @@ void ConnectionStore::testConnection(const QVariantMap &c)
 {
     if (m_testing) return;
     if (const QString e = validate(c); !e.isEmpty()) { emit testFinished(false, e); return; }
-    if (c.value("mode").toInt() == 2) {
-        emit testFinished(false, tr("Testing the HTTP agent is not available yet."));
-        return;
-    }
     m_testing = true;
     emit testingChanged();
     auto *w = new QFutureWatcher<QVariantMap>(this);
-    connect(w, &QFutureWatcher<QVariantMap>::finished, this, [this, w] {
+    connect(w, &QFutureWatcher<QVariantMap>::finished, this, [this, w, c] {
         const QVariantMap r = w->result();
         w->deleteLater();
         m_testing = false;
@@ -181,6 +177,8 @@ void ConnectionStore::testConnection(const QVariantMap &c)
         QString msg = tr("Connected. Server version %1\n%2").arg(r.value("version").toString(), parts.join(", "));
         if (!r.value("cipher").toString().isEmpty())
             msg += tr("\nTLS cipher: %1").arg(r.value("cipher").toString());
+        if (c.value("mode").toInt() == 2 && c.value("httpUrl").toString().trimmed().startsWith("http://", Qt::CaseInsensitive))
+            msg += tr("\nWarning: agent URL is not HTTPS; credentials travel unencrypted.");
         for (const QString &warn : r.value("warnings").toStringList())
             msg += tr("\nNot enough privileges to list %1").arg(warn);
         emit testFinished(true, msg);
@@ -193,6 +191,10 @@ void ConnectionStore::testConnection(const QVariantMap &c)
         cfg.password = c.value("password").toString();
         cfg.database = c.value("database").toString().trimmed();
         cfg.ssl = c.value("ssl").toBool();
+        if (c.value("mode").toInt() == 2) {
+            cfg.httpUrl = c.value("httpUrl").toString().trimmed();
+            cfg.httpToken = c.value("httpToken").toString();
+        }
 
         unsigned long long tunnel = 0;
         if (c.value("mode").toInt() == 1) {

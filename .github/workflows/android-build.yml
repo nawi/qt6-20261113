@@ -41,6 +41,24 @@ jobs:
       - name: Rust ssh_bridge tests + host staticlib
         working-directory: rust/ssh_bridge
         run: cargo test && cargo build --release
+      - name: PHP agent (7.4 = minimum supported) on 127.0.0.1:8099
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mysqli, mbstring, json
+          tools: none
+      - name: Start PHP agent
+        env:
+          NAWI_TOKEN: ci-token
+          NAWI_ALLOW_REMOTE_HOST: ''
+        run: |
+          php -l agent/tunnel.php
+          nohup php -S 127.0.0.1:8099 -t agent > "$RUNNER_TEMP/php-agent.log" 2>&1 &
+          for i in $(seq 20); do curl -s -o /dev/null http://127.0.0.1:8099/tunnel.php && break; sleep 0.5; done
+          curl -s -H 'X-Nawi-Token: ci-token' -d '{"action":"ping","db":{"host":"127.0.0.1","port":3306,"user":"root","pass":"testpass","name":"test"}}' http://127.0.0.1:8099/tunnel.php; echo
+      - name: PHP agent log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/php-agent.log" || true
       - name: Start SSH server for tunnel tests
         run: |
           sudo apt-get install -y --no-install-recommends openssh-server
@@ -81,6 +99,8 @@ jobs:
           TEST_DB_USER: root
           TEST_DB_PASS: testpass
           TEST_DB_NAME: test
+          TEST_HTTP_URL: http://127.0.0.1:8099/tunnel.php
+          TEST_HTTP_TOKEN: ci-token
           TEST_SSH_HOST: 127.0.0.1
           TEST_SSH_PORT: 2222
           TEST_SSH_USER: runner
@@ -146,6 +166,15 @@ jobs:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/${{ env.ANDROID_NDK_VERSION }}
         run: ./scripts/build-rust.sh
 
+      # Qt Network (HTTPS to the PHP agent) loads libssl_3.so/libcrypto_3.so at runtime on Android.
+      - name: OpenSSL 3 shared libs for Qt Network
+        run: |
+          mkdir -p deps/ssl
+          for l in libssl_3 libcrypto_3; do
+            curl -fsSL -o deps/ssl/$l.so https://github.com/KDAB/android_openssl/raw/master/ssl_3/arm64-v8a/$l.so
+          done
+          ls -l deps/ssl
+
       - name: Prepare signing key
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -161,6 +190,7 @@ jobs:
           "$QT_ROOT_DIR/bin/qt-cmake" -S . -B build -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
             -DQT_ANDROID_SIGN_APK=ON \
+            -DNAWI_SSL_LIBS_DIR="$PWD/deps/ssl" \
             -DANDROID_SDK_ROOT="$ANDROID_HOME" \
             -DANDROID_NDK_ROOT="$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION"
 

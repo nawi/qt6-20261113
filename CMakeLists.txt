@@ -11,7 +11,7 @@ if(ANDROID)
 else()
     set(NAWI_QT_MIN 6.8)
 endif()
-find_package(Qt6 ${NAWI_QT_MIN} REQUIRED COMPONENTS Core Sql Concurrent Quick QuickControls2 Test)
+find_package(Qt6 ${NAWI_QT_MIN} REQUIRED COMPONENTS Core Sql Concurrent Network Quick QuickControls2 Test)
 qt_standard_project_setup(REQUIRES ${NAWI_QT_MIN})
 
 # --- native deps: MariaDB Connector/C + OpenSSL + Rust ssh_bridge ---------------
@@ -33,9 +33,9 @@ else()
     set(NATIVE_LIBS "${MARIADB_LIB}" OpenSSL::SSL OpenSSL::Crypto "${SSH_BRIDGE_LIB}" dl pthread m)
 endif()
 
-add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp src/DbClient.cpp src/DbSession.cpp src/SshTunnel.cpp src/GridModel.cpp src/Workspace.cpp)
+add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp src/DbClient.cpp src/DbSession.cpp src/SshTunnel.cpp src/GridModel.cpp src/Workspace.cpp src/HttpAgent.cpp)
 target_include_directories(core PUBLIC src ${NATIVE_INCLUDES})
-target_link_libraries(core PUBLIC Qt6::Core Qt6::Sql Qt6::Concurrent Qt6::Gui ${NATIVE_LIBS})
+target_link_libraries(core PUBLIC Qt6::Core Qt6::Sql Qt6::Concurrent Qt6::Network Qt6::Gui ${NATIVE_LIBS})
 target_compile_definitions(core PUBLIC APP_VERSION="${PROJECT_VERSION}")
 
 # --- app -----------------------------------------------------------------------
@@ -66,6 +66,11 @@ set_target_properties(NawiDBMan PROPERTIES
     QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/android"
 )
 
+if(ANDROID AND NAWI_SSL_LIBS_DIR)
+    set_target_properties(NawiDBMan PROPERTIES QT_ANDROID_EXTRA_LIBS
+        "${NAWI_SSL_LIBS_DIR}/libssl_3.so;${NAWI_SSL_LIBS_DIR}/libcrypto_3.so")
+endif()
+
 if(NOT ANDROID)
     # build dir already holds the QML module dir named NawiDBMan
     set_target_properties(NawiDBMan PROPERTIES OUTPUT_NAME nawidbman)
@@ -74,7 +79,7 @@ endif()
 # --- tests (desktop only) ----------------------------------------------------------
 if(NOT ANDROID)
     enable_testing()
-    foreach(t probe storage dbclient session tunnel)
+    foreach(t probe storage dbclient session tunnel http)
         qt_add_executable(tst_${t} tests/tst_${t}.cpp)
         target_link_libraries(tst_${t} PRIVATE Qt6::Test core)
         add_test(NAME ${t} COMMAND tst_${t})

@@ -33,6 +33,8 @@ public:
         QString password;
         QString database;
         bool ssl = false;      // On = encrypted, certificate is NOT verified
+        QString httpUrl;       // non-empty = talk to the PHP tunnel agent instead of TCP
+        QString httpToken;
         int connectTimeout = 10;
         int readTimeout = 300;
     };
@@ -44,7 +46,7 @@ public:
 
     bool open(const Config &c, QString *error = nullptr);
     void close();
-    bool isOpen() const { return m != nullptr; }
+    bool isOpen() const { return m != nullptr || m_http; }
     QString serverVersion() const { return m_version; }
     QString sslCipher() const { return m_cipher; }
     unsigned threadId() const { return m_threadId; }
@@ -68,7 +70,11 @@ private:
     QString typeName(int mysqlType) const;
     void setSessionLimit(int rows);
 
+    bool openHttp(QString *error);
+    QueryResult queryHttp(const QString &sql, int limit);
+
     void *m = nullptr;   // MYSQL*
+    bool m_http = false;
     Config m_config;
     QString m_version;
     QString m_cipher;

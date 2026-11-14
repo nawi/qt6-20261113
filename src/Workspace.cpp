@@ -570,7 +570,6 @@ void Workspace::stop()
 void Workspace::beginTunnelOrConnect()
 {
     const int mode = m_conn.value("mode").toInt();
-    if (mode == 2) { m_opening = false; setError(tr("HTTP tunnel agent is not available yet (F10).")); return; }
     if (mode == 1) {
         if (!m_tunnels) { m_opening = false; setError(tr("SSH tunnel unavailable.")); return; }
         m_status = tr("Opening SSH tunnel…");
