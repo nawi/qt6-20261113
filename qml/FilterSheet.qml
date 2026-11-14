@@ -14,7 +14,7 @@ Popup {
     x: (parent.width - width) / 2
     y: parent.height - height - Theme.safeBottom - 8
     width: Math.min(parent.width - 16, 560)
-    height: Math.min(parent.height - 80, content.implicitHeight + 32)
+    height: content.implicitHeight + 32
     padding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
@@ -54,7 +54,7 @@ Popup {
         ListView {
             id: list
             width: parent.width
-            height: Math.min(condModel.count * 52, sheet.height - 220)
+            height: Math.min(condModel.count * 52, 4 * 52)   // fixed cap: must not depend on sheet.height (binding loop)
             model: condModel
             clip: true
 
