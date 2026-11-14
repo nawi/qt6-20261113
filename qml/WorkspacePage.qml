@@ -94,7 +94,9 @@ Rectangle {
                 placeholderTextColor: Theme.text2
                 font.pixelSize: 15
                 inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
-                onTextEdited: ws.setFilter(text)
+                // displayText = text + IME preedit; keyboards with predictive/composing input
+                // (e.g. Huawei) only commit on space, so textEdited alone never fires per keystroke.
+                onDisplayTextChanged: ws.setFilter(displayText)
             }
         }
 
