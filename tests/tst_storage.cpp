@@ -21,6 +21,7 @@ private slots:
         c["sshFp"] = QVariant(QString());   // QML leaves unset string properties null
         ConnectionStore st;
         QVERIFY2(st.save(c).isEmpty(), "null string field must not violate NOT NULL");
+        QSqlQuery("DELETE FROM connections");   // keep shared in-memory DB clean for crud()
     }
 
     void csvExport() {
