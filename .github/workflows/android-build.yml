@@ -63,7 +63,13 @@ jobs:
           PidFile $D/sshd.pid
           AllowUsers $USER
           EOF
-          sudo /usr/sbin/sshd -f "$D/sshd_config"
+          sudo /usr/sbin/sshd -f "$D/sshd_config" -E "$D/sshd.log"
+      - name: Verify SSH test server
+        run: |
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /tmp/nawi-ssh/client_key -p 2222 "$USER"@127.0.0.1 true
+      - name: SSH server log on failure
+        if: failure()
+        run: sudo cat /tmp/nawi-ssh/sshd.log || true
       - name: Build + run QtTest
         env:
           TEST_DB_HOST: 127.0.0.1
