@@ -16,6 +16,13 @@ class TstStorage : public QObject {
 private slots:
     void initTestCase() { QVERIFY(Db::open(":memory:")); }
 
+    void saveWithNullStringField() {
+        QVariantMap c = direct();
+        c["sshFp"] = QVariant(QString());   // QML leaves unset string properties null
+        ConnectionStore st;
+        QVERIFY2(st.save(c).isEmpty(), "null string field must not violate NOT NULL");
+    }
+
     void csvExport() {
         GridModel g;
         g.setRows({"id", "note"}, {QVariant(QVariantList{1, QString("a,b")}),

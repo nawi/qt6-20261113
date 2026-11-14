@@ -100,6 +100,7 @@ QString ConnectionStore::save(const QVariantMap &c)
             v = enc;
         } else if (v.typeId() == QMetaType::QString) {
             v = v.toString().trimmed();
+            if (v.toString().isNull()) v = QStringLiteral("");   // null QString binds as SQL NULL; columns are NOT NULL
         } else if (v.typeId() == QMetaType::Bool) {
             v = v.toBool() ? 1 : 0;
         }
