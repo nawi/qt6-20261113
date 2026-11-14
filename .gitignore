@@ -1,9 +1,20 @@
-INSTRUCTION.md
-docs/*.md
-docs/.env
+# Qt lokal (aqtinstall)
+6.12.0/
 aqtinstall.log
+
+# Build artifacts
 build/
+build-local/
 build-test/
 deps/
-rust/ssh_bridge/target/
 out/
+
+# Docs (generated, not committed)
+docs/*.md
+docs/.env
+
+# Rust
+rust/ssh_bridge/target/
+
+# System
+INSTRUCTION.md
