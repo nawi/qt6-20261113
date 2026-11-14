@@ -126,6 +126,9 @@ Rectangle {
                        font { pixelSize: 11; weight: Font.DemiBold } }
             }
             delegate: Rectangle {
+                id: itemDelegate
+                property string objName: model.name || ""
+                property string objKind: model.kind || ""
                 width: objectList.width
                 height: 46
                 radius: 8
@@ -135,19 +138,19 @@ Rectangle {
                     spacing: 10
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
-                        name: kind === "table" ? "table" : kind === "view" ? "globe"
-                              : kind === "trigger" ? "link" : kind === "function" ? "shield" : "database"
+                        name: itemDelegate.objKind === "table" ? "table" : itemDelegate.objKind === "view" ? "globe"
+                              : itemDelegate.objKind === "trigger" ? "link" : itemDelegate.objKind === "function" ? "shield" : "database"
                         color: Theme.accent; size: 18
                     }
                     Text {
                         width: parent.width - 60
                         anchors.verticalCenter: parent.verticalCenter
-                        text: name; color: Theme.text; font.pixelSize: 15; elide: Text.ElideRight
+                        text: itemDelegate.objName; color: Theme.text; font.pixelSize: 15; elide: Text.ElideRight
                     }
                     Item {
                         width: 36; height: 36
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: kind === "table" || kind === "view"
+                        visible: itemDelegate.objKind === "table" || itemDelegate.objKind === "view"
                         Icon { anchors.centerIn: parent; name: "chevronRight"; color: Theme.text2; size: 15 }
                     }
                 }
@@ -155,9 +158,12 @@ Rectangle {
                     id: ma
                     anchors.fill: parent
                     onClicked: {
+                        console.log("OPENING OBJECT:", itemDelegate.objName, itemDelegate.objKind)
                         page.showingObjects = false
-                        if (model.kind === "table" || model.kind === "view") ws.openTable(model.name, model.kind)
-                        else ws.openDesign(model.kind, model.name)
+                        if (itemDelegate.objKind === "table" || itemDelegate.objKind === "view")
+                            ws.openTable(itemDelegate.objName, itemDelegate.objKind)
+                        else
+                            ws.openDesign(itemDelegate.objKind, itemDelegate.objName)
                     }
                 }
             }
@@ -256,8 +262,8 @@ Rectangle {
                 currentIndex: ws.currentIndex
                 delegate: Rectangle {
                     width: Math.min(160, Math.max(90, tabTitle.implicitWidth + 44))
-                    height: parent.height - 8
-                    anchors.verticalCenter: parent.verticalCenter
+                    height: 36
+                    y: 4
                     radius: 9
                     color: index === ws.currentIndex ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16)
                                                      : "transparent"
