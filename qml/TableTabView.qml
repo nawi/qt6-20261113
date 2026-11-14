@@ -25,14 +25,13 @@ Rectangle {
         function onChanged() {}
     }
 
-    Column {
+    Item {
         anchors { fill: parent; leftMargin: Theme.margin; rightMargin: Theme.margin; topMargin: 8 }
-        spacing: 8
 
         // header: left = table info (2 rows), right = connection info (2 rows, mirrors top strip)
         Column {
             id: header
-            width: parent.width
+            anchors { left: parent.left; right: parent.right; top: parent.top }
             Row {
                 width: parent.width
                 Text {
@@ -68,7 +67,7 @@ Rectangle {
 
         Row {
             id: tools
-            width: parent.width
+            anchors { left: parent.left; right: parent.right; top: header.bottom; topMargin: 4 }
             spacing: 2
             NavButton { icon: "search"; color: root.tab && root.tab.search !== "" ? Theme.accent : Theme.text2
                         onClicked: { searchBar.shown = !searchBar.shown; if (!searchBar.shown) root.tab.setSearch("") } }
@@ -76,13 +75,14 @@ Rectangle {
             NavButton { icon: "sliders"; onClicked: filterSheet.open() }
             NavButton { icon: "plus"; active: root.tab && !root.tab.readOnly; onClicked: addSheet.open() }
             NavButton { icon: "table"; onClicked: root.tab.openDesign() }
-            NavButton { icon: "check"; onClicked: root.tab.refresh() }
+            NavButton { icon: "refresh"; onClicked: root.tab.refresh() }
         }
 
         Rectangle {
             id: searchBar
             property bool shown: false
-            width: parent.width; height: shown ? 40 : 0; visible: shown
+            anchors { left: parent.left; right: parent.right; top: tools.bottom; topMargin: shown ? 8 : 0 }
+            height: shown ? 40 : 0; visible: shown; clip: true
             radius: 10; color: Theme.fill
             TextField {
                 id: searchField
@@ -98,17 +98,17 @@ Rectangle {
         }
 
         Text {
-            width: parent.width
+            id: errorText
+            anchors { left: parent.left; right: parent.right; top: searchBar.bottom; topMargin: 8 }
             visible: text !== ""
+            height: visible ? implicitHeight : 0
             text: root.tab ? root.tab.error : ""
             color: Theme.danger; font.pixelSize: 12; wrapMode: Text.Wrap
         }
 
         GridTable {
             id: grid
-            width: parent.width
-            height: parent.height - header.height - tools.height - 40
-                     - (statusText.visible ? 18 : 0) - (searchBar.shown ? 48 : 0)
+            anchors { left: parent.left; right: parent.right; top: errorText.bottom; topMargin: 8; bottom: pager.top; bottomMargin: 4 }
             grid: root.tab ? root.tab.grid : null
             interactive: true
             sortColumn: root.tab ? root.tab.sortColumn : -1
@@ -125,7 +125,9 @@ Rectangle {
         }
 
         Row {
-            width: parent.width; height: 34
+            id: pager
+            anchors { left: parent.left; right: parent.right; bottom: statusText.top; bottomMargin: statusText.visible ? 4 : 0 }
+            height: 34
             NavButton { text: qsTr("Prev"); active: root.tab && root.tab.offset > 0; onClicked: root.tab.prevPage() }
             Item { width: parent.width - 180; height: 1 }
             Text { anchors.verticalCenter: parent.verticalCenter; color: Theme.text2; font.pixelSize: 12
@@ -136,7 +138,8 @@ Rectangle {
 
         Text {
             id: statusText
-            width: parent.width
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: visible ? implicitHeight : 0
             visible: root.status !== ""
             text: root.status; color: Theme.text2; font.pixelSize: 12; elide: Text.ElideRight
         }

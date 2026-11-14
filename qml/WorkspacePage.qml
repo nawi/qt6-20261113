@@ -51,11 +51,12 @@ Rectangle {
         trailing: NavButton { icon: "plus"; onClicked: { ws.openQuery(); page.showingObjects = false } }
     }
 
-    // connection strip
+    // connection strip (table tabs show this info themselves, in TableTabView header)
     Rectangle {
         id: strip
         anchors { left: parent.left; right: parent.right; top: nav.bottom }
-        height: 36
+        visible: !page.activeTab || page.activeTab.kind !== "table"
+        height: visible ? 36 : 0
         color: Theme.bg
         Column {
             x: Theme.margin + Theme.safeLeft
