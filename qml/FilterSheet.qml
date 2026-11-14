@@ -54,7 +54,7 @@ Popup {
         ListView {
             id: list
             width: parent.width
-            height: Math.min(condModel.count * 52, sheet.height - 160)
+            height: Math.min(condModel.count * 52 + 48, sheet.height - 160)   // +48 = "Add condition" footer (must show with 0 rows)
             model: condModel
             clip: true
 
