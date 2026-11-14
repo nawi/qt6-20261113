@@ -45,6 +45,8 @@ jobs:
         run: |
           sudo apt-get install -y --no-install-recommends openssh-server
           sudo mkdir -p /run/sshd
+          # UsePAM no: sshd tolak akun terkunci ("!" di shadow). Ganti ke "*" (password tak valid, tapi tidak terkunci).
+          sudo usermod -p '*' "$USER"
           D="$HOME/nawi-ssh" && mkdir -p "$D" "$HOME/.ssh" && chmod 700 "$D" "$HOME/.ssh"
           ssh-keygen -q -t ed25519 -f "$D/host_key" -N ""
           ssh-keygen -q -t ed25519 -f "$D/client_key" -N ""
@@ -60,6 +62,7 @@ jobs:
           KbdInteractiveAuthentication no
           UsePAM no
           StrictModes no
+          LogLevel VERBOSE
           PidFile $D/sshd.pid
           AllowUsers $USER
           EOF
