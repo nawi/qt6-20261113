@@ -14,7 +14,7 @@ Popup {
     x: (parent.width - width) / 2
     y: parent.height - height - Theme.safeBottom - 8
     width: Math.min(parent.width - 16, 560)
-    height: Math.min(parent.height - 80, content.height + 32)
+    height: Math.min(parent.height - 80, content.implicitHeight + 32)
     padding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
