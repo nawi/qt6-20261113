@@ -49,11 +49,11 @@ Item {
                                 font { pixelSize: 12; weight: Font.DemiBold; capitalization: Font.AllUppercase }
                                 elide: Text.ElideRight
                             }
-                            Text {
+                            Icon {
                                 visible: root.sortColumn === index
-                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: root.sortDesc ? "\u25BE" : "\u25B4"
-                                color: Theme.accent; font.pixelSize: 14
+                                anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                                name: "chevronLeft"; size: 14; strokeWidth: 2.5
+                                rotation: root.sortDesc ? -90 : 90   // down = DESC, up = ASC
                             }
                             Rectangle { anchors.right: parent.right; width: 0.5; height: parent.height; color: Theme.sep }
                             MouseArea { anchors.fill: parent; enabled: root.interactive; onClicked: root.headerTapped(index) }
