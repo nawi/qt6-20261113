@@ -81,13 +81,17 @@ Item {
                             model: root.grid ? root.grid.columnCount : 0
                             Rectangle {
                                 width: root.widths[index] || 80; height: 44
+                                clip: true
                                 color: root.interactive && ma.pressed ? Theme.pressed : "transparent"
                                 Text {
                                     anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                                     text: {
                                         var v = rowItem.cells ? rowItem.cells[index] : null
-                                        return (v === null || v === undefined) ? "NULL" : String(v)
+                                        if (v === null || v === undefined) return "NULL"
+                                        return String(v).replace(/[\r\n]+/g, " ")
                                     }
+                                    textFormat: Text.PlainText
+                                    maximumLineCount: 1
                                     color: (rowItem.cells && (rowItem.cells[index] === null || rowItem.cells[index] === undefined))
                                            ? Theme.text2 : Theme.text
                                     font { pixelSize: 14; italic: rowItem.cells && (rowItem.cells[index] === null || rowItem.cells[index] === undefined) }

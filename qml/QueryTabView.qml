@@ -55,19 +55,26 @@ Rectangle {
             height: Math.max(110, parent.height * 0.32)
             radius: Theme.radius
             color: Theme.card
-            TextArea {
-                id: editor
+            clip: true
+            ScrollView {
+                id: queryScroll
                 anchors.fill: parent
                 anchors.margins: 8
-                text: root.tab ? root.tab.editorText : ""
-                onTextChanged: if (root.tab) root.tab.editorText = text
-                color: Theme.text
-                background: null
-                font { pixelSize: 14; family: "monospace" }
-                wrapMode: TextArea.WrapAnywhere
-                placeholderText: qsTr("SELECT * FROM ...")
-                placeholderTextColor: Theme.text2
-                inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                clip: true
+                TextArea {
+                    id: editor
+                    width: queryScroll.availableWidth
+                    text: root.tab ? root.tab.editorText : ""
+                    onTextChanged: if (root.tab) root.tab.editorText = text
+                    color: Theme.text
+                    background: null
+                    font { pixelSize: 14; family: "monospace" }
+                    wrapMode: TextArea.WrapAnywhere
+                    placeholderText: qsTr("SELECT * FROM ...")
+                    placeholderTextColor: Theme.text2
+                    inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                    selectByMouse: true
+                }
             }
         }
 

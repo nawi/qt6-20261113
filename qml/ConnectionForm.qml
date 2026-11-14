@@ -140,17 +140,24 @@ Rectangle {
                     visible: page.mode === 1 && page.sshAuth === 1
                     width: parent.width; height: visible ? 150 : 0
                     property bool isFirst: false; property bool isLast: true
+                    clip: true
                     Rectangle { anchors { top: parent.top; right: parent.right } width: parent.width - Theme.margin; height: 0.5; color: Theme.sep }
-                    TextArea {
-                        id: keyArea
+                    ScrollView {
+                        id: keyScroll
                         anchors { fill: parent; margins: 8 }
-                        background: null
-                        color: Theme.text
-                        placeholderText: qsTr("Paste private key (-----BEGIN ... PRIVATE KEY-----)")
-                        placeholderTextColor: Theme.text2
-                        font { pixelSize: 13; family: "monospace" }
-                        wrapMode: TextArea.WrapAnywhere
-                        inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
+                        clip: true
+                        TextArea {
+                            id: keyArea
+                            width: keyScroll.availableWidth
+                            background: null
+                            color: Theme.text
+                            placeholderText: qsTr("Paste private key (-----BEGIN ... PRIVATE KEY-----)")
+                            placeholderTextColor: Theme.text2
+                            font { pixelSize: 13; family: "monospace" }
+                            wrapMode: TextArea.WrapAnywhere
+                            inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
+                            selectByMouse: true
+                        }
                     }
                 }
             }

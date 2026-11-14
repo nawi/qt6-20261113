@@ -39,17 +39,23 @@ Rectangle {
             visible: root.section === 2
             radius: Theme.radius
             color: Theme.card
-            TextArea {
-                id: ddlArea
+            clip: true
+            ScrollView {
+                id: ddlScroll
                 anchors.fill: parent
                 anchors.margins: 10
-                readOnly: true
-                selectByMouse: true
-                text: root.tab ? root.tab.ddlText : ""
-                color: Theme.text
-                background: null
-                font { pixelSize: 12; family: "monospace" }
-                wrapMode: TextArea.WrapAnywhere
+                clip: true
+                TextArea {
+                    id: ddlArea
+                    width: ddlScroll.availableWidth
+                    readOnly: true
+                    selectByMouse: true
+                    text: root.tab ? root.tab.ddlText : ""
+                    color: Theme.text
+                    background: null
+                    font { pixelSize: 12; family: "monospace" }
+                    wrapMode: TextArea.WrapAnywhere
+                }
             }
             NavButton {
                 anchors { right: parent.right; top: parent.top; margins: 4 }

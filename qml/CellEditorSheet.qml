@@ -15,7 +15,7 @@ Popup {
     modal: true
     dim: true
     x: (parent.width - width) / 2
-    y: (parent.height - height) / 2
+    y: Math.max(Theme.safeTop + 8, (parent.height - Theme.safeIme - height) / 2)
     width: Math.min(parent.width - 32, 480)
     padding: 16
     closePolicy: Popup.CloseOnEscape
@@ -25,16 +25,23 @@ Popup {
         spacing: 14
         Text { width: parent.width; text: sheet.columnName; color: Theme.text2
                font { pixelSize: 13; weight: Font.DemiBold; capitalization: Font.AllUppercase } }
-        TextArea {
-            id: input
+        ScrollView {
+            id: scroll
             width: parent.width
-            height: 96
-            text: sheet.isNull ? "" : sheet.value
-            enabled: !sheet.isNull && !sheet.readOnly
-            color: Theme.text
-            background: Rectangle { radius: 10; color: Theme.fill }
-            font { pixelSize: 16; family: "monospace" }
-            wrapMode: TextArea.WrapAnywhere
+            height: 140
+            clip: true
+
+            TextArea {
+                id: input
+                width: scroll.availableWidth
+                text: sheet.isNull ? "" : sheet.value
+                enabled: !sheet.isNull && !sheet.readOnly
+                color: Theme.text
+                background: Rectangle { radius: 10; color: Theme.fill }
+                font { pixelSize: 15; family: "monospace" }
+                wrapMode: TextArea.WrapAnywhere
+                selectByMouse: true
+            }
         }
         Row {
             width: parent.width
