@@ -39,6 +39,7 @@ class TableTab : public Tab {
     Q_PROPERTY(int offset READ offset NOTIFY changed)
     Q_PROPERTY(bool hasMore READ hasMore NOTIFY changed)
     Q_PROPERTY(bool readOnly READ readOnly NOTIFY changed)
+    Q_PROPERTY(bool connected READ connected NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
     Q_PROPERTY(QString table READ table CONSTANT)
     Q_PROPERTY(QVariantList columns READ columns NOTIFY changed)
@@ -57,6 +58,7 @@ public:
     int offset() const { return m_offset; }
     bool hasMore() const { return m_hasMore; }
     bool readOnly() const { return m_readOnly; }
+    bool connected() const { return m_connected; }
     QString error() const { return m_error; }
     QVariantList columns() const { return m_columns; }
     QVariantList filters() const { return m_filters; }
@@ -297,6 +299,8 @@ public:
     Q_INVOKABLE void closeTab(int index);
     Q_INVOKABLE void setFilter(const QString &text);
     Q_INVOKABLE void saveTabs();
+    void notifyConnectionLost();
+    void notifyConnected(const QString &version);
 
 signals:
     void connIdChanged();

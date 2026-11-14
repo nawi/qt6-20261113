@@ -81,4 +81,6 @@ private:
     unsigned m_threadId = 0;
     int m_sessionLimit = -1;
     int m_lastErrorCode = 0;
+    int m_waitTimeout = 28800;
+    qint64 m_lastActivity = 0;
 };

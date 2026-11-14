@@ -51,7 +51,7 @@ Item {
                                     : (f.secret ? Qt.ImhNoAutoUppercase | Qt.ImhSensitiveData
                                                 : Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText)
         selectByMouse: true
-        onTextEdited: f.edited()
+        onDisplayTextChanged: f.edited()
         onEditingFinished: f.committed()
     }
     function focusInput() { input.forceActiveFocus() }

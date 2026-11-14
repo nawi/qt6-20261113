@@ -93,7 +93,7 @@ Popup {
                         text: condModel.get(rowDelegate.rowIndex).val
                         visible: condModel.get(rowDelegate.rowIndex).op !== "IS NULL" && condModel.get(rowDelegate.rowIndex).op !== "IS NOT NULL"
                         placeholderText: qsTr("Value")
-                        onTextEdited: condModel.setProperty(rowDelegate.rowIndex, "val", text)
+                        onDisplayTextChanged: condModel.setProperty(rowDelegate.rowIndex, "val", displayText)
                     }
                     Item { width: 32; height: 36
                         Icon { anchors.centerIn: parent; name: "trash"; color: Theme.danger; size: 18 }

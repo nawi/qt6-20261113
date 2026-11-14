@@ -37,16 +37,26 @@ void TableTab::connectSession()
         if (kind == "open") {
             if (!r.value("ok").toBool()) {
                 m_error = r.value("error").toString();
+                m_connected = false;
+                if (m_ws) m_ws->notifyConnectionLost();
                 emit changed();
                 return;
             }
             m_connected = true;
+            m_error.clear();
+            if (m_ws) m_ws->notifyConnected(r.value("version").toString());
+            emit changed();
             refresh();
         } else if (kind == "table") {
             m_loading = false;
             emit busyChanged();
             if (!r.value("ok").toBool()) {
                 m_error = r.value("error").toString();
+                const int code = r.value("errorCode").toInt();
+                if (code == 2006 || code == 2013) {
+                    m_connected = false;
+                    if (m_ws) m_ws->notifyConnectionLost();
+                }
                 emit changed();
                 return;
             }
@@ -56,6 +66,11 @@ void TableTab::connectSession()
             const bool ok = r.value("ok").toBool();
             if (!ok) {
                 m_error = r.value("error").toString();
+                const int code = r.value("errorCode").toInt();
+                if (code == 2006 || code == 2013) {
+                    m_connected = false;
+                    if (m_ws) m_ws->notifyConnectionLost();
+                }
                 emit changed();
                 emit writeFinished(false, m_error);
             } else {
@@ -91,7 +106,19 @@ void TableTab::load()
                          m_search, searchCols);
 }
 
-void TableTab::refresh() { m_offset = 0; load(); }
+void TableTab::refresh()
+{
+    m_offset = 0;
+    if (!m_connected) {
+        m_loading = true;
+        m_error.clear();
+        emit busyChanged();
+        emit changed();
+        m_session->open(conn, m_host, m_port);
+        return;
+    }
+    load();
+}
 
 void TableTab::nextPage()
 {
@@ -732,5 +759,19 @@ void Workspace::setError(const QString &e)
     m_error = e;
     m_opening = false;
     m_status = tr("Failed");
+    emit changed();
+}
+
+void Workspace::notifyConnectionLost()
+{
+    m_status = tr("Connection lost");
+    m_error = tr("Connection lost");
+    emit changed();
+}
+
+void Workspace::notifyConnected(const QString &version)
+{
+    m_error.clear();
+    m_status = tr("Connected · %1").arg(version);
     emit changed();
 }

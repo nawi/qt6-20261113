@@ -1,5 +1,6 @@
 #include "DbClient.h"
 #include "HttpAgent.h"
+#include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QElapsedTimer>
@@ -148,6 +149,15 @@ bool DbClient::open(const Config &c, QString *error)
         }
         m_cipher = r.rows.first().value(1).toString();
     }
+
+    m_lastActivity = QDateTime::currentSecsSinceEpoch();
+    m_waitTimeout = 28800;
+    QueryResult wt = query("SELECT @@wait_timeout", -1);
+    if (wt.ok() && !wt.rows.isEmpty() && !wt.rows.first().isEmpty()) {
+        bool ok = false;
+        int val = wt.rows.first().first().toInt(&ok);
+        if (ok && val > 0) m_waitTimeout = val;
+    }
     return true;
 }
 
@@ -162,6 +172,8 @@ void DbClient::close()
     m_cipher.clear();
     m_threadId = 0;
     m_sessionLimit = -1;
+    m_waitTimeout = 28800;
+    m_lastActivity = 0;
 }
 
 QString DbClient::typeName(int t) const
@@ -222,16 +234,53 @@ QueryResult DbClient::query(const QString &sql, int limit)
         out.errorCode = -1;
         return out;
     }
+
+    // Proactive ping if idle longer than interval (half of server wait_timeout, 10s..60s)
+    const int pingInterval = qBound(10, m_waitTimeout / 2, 60);
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (m_lastActivity > 0 && (now - m_lastActivity) >= pingInterval) {
+        if (mysql_ping(static_cast<MYSQL *>(m)) != 0) {
+            QString err;
+            if (!open(m_config, &err)) {
+                out.errorCode = 2006;
+                out.error = friendlyError(2006, err);
+                out.elapsedMs = timer.elapsed();
+                return out;
+            }
+        }
+    }
+
     // sql_select_limit is N+1 so truncation can be detected.
     setSessionLimit(limit >= 0 ? limit + 1 : -1);
 
     const QByteArray q = sql.toUtf8();
-    if (mysql_real_query(static_cast<MYSQL *>(m), q.constData(), q.size()) != 0) {
-        out.errorCode = mysql_errno(static_cast<MYSQL *>(m));
-        out.error = friendlyError(out.errorCode, QString::fromUtf8(mysql_error(static_cast<MYSQL *>(m))));
-        out.elapsedMs = timer.elapsed();
-        return out;
+    bool queryOk = (mysql_real_query(static_cast<MYSQL *>(m), q.constData(), q.size()) == 0);
+    if (!queryOk) {
+        int errCode = mysql_errno(static_cast<MYSQL *>(m));
+        if (errCode == 2006 || errCode == 2013) {
+            // Read queries are idempotent and safe to retry on fresh connection
+            const QString trimmed = sql.trimmed();
+            const bool isReadOnly = trimmed.startsWith("SELECT", Qt::CaseInsensitive)
+                                 || trimmed.startsWith("SHOW", Qt::CaseInsensitive)
+                                 || trimmed.startsWith("DESCRIBE", Qt::CaseInsensitive)
+                                 || trimmed.startsWith("EXPLAIN", Qt::CaseInsensitive);
+            if (isReadOnly) {
+                QString reopenErr;
+                if (open(m_config, &reopenErr)) {
+                    setSessionLimit(limit >= 0 ? limit + 1 : -1);
+                    queryOk = (mysql_real_query(static_cast<MYSQL *>(m), q.constData(), q.size()) == 0);
+                }
+            }
+        }
+        if (!queryOk) {
+            out.errorCode = mysql_errno(static_cast<MYSQL *>(m));
+            if (out.errorCode == 0) out.errorCode = 2006;
+            out.error = friendlyError(out.errorCode, QString::fromUtf8(mysql_error(static_cast<MYSQL *>(m))));
+            out.elapsedMs = timer.elapsed();
+            return out;
+        }
     }
+    m_lastActivity = QDateTime::currentSecsSinceEpoch();
 
     MYSQL_RES *res = mysql_store_result(static_cast<MYSQL *>(m));
     if (!res) {

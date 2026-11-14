@@ -68,7 +68,7 @@ Popup {
                         enabled: include && !isNull
                         text: val
                         placeholderText: isNull ? "NULL" : qsTr("Value")
-                        onTextEdited: form.setProperty(row.rowIndex, "val", text)
+                        onDisplayTextChanged: form.setProperty(row.rowIndex, "val", displayText)
                     }
                     Text { text: qsTr("NULL"); color: Theme.text2; font.pixelSize: 12
                            anchors.verticalCenter: parent.verticalCenter }

@@ -58,8 +58,8 @@ Rectangle {
                 Text {
                     width: parent.width / 2
                     horizontalAlignment: Text.AlignRight
-                    text: root.connectionStatus
-                    color: root.connectionError ? Theme.danger : Theme.text2
+                    text: (root.tab && !root.tab.connected) ? qsTr("Connection lost") : root.connectionStatus
+                    color: (root.connectionError || (root.tab && !root.tab.connected)) ? Theme.danger : Theme.text2
                     font.pixelSize: 12; elide: Text.ElideRight
                 }
             }

@@ -115,7 +115,9 @@ async fn setup(
     let actual = Arc::new(Mutex::new(None));
     let handler = Handler { expected: expected.clone(), actual: actual.clone() };
     let config = Arc::new(client::Config {
-        inactivity_timeout: Some(Duration::from_secs(300)),
+        inactivity_timeout: None,
+        keepalive_interval: Some(Duration::from_secs(15)),
+        keepalive_max: 4,
         nodelay: true,
         ..Default::default()
     });

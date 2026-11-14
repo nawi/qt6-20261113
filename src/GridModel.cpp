@@ -40,7 +40,8 @@ void GridModel::setRows(const QStringList &headers, const QVariantList &rows, co
 
 void GridModel::setResult(const QVariantMap &result)
 {
-    if (!result.value("ok").toBool()) { clear(); return; }
+    // ponytail: preserve existing rows on query failure so error doesn't wipe user view
+    if (!result.value("ok").toBool()) return;
     QStringList headers;
     const QVariantList cols = result.value("columns").toList();
     for (const QVariant &c : cols) headers << c.toMap().value("name").toString();
