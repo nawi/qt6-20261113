@@ -14,7 +14,7 @@ Popup {
     x: (parent.width - width) / 2
     y: parent.height - height - Theme.safeBottom - 8
     width: Math.min(parent.width - 16, 560)
-    height: content.implicitHeight + 32
+    height: Math.min(parent.height - 80, 190 + Math.min(condModel.count * 52, 260))
     padding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
@@ -69,7 +69,7 @@ Popup {
                     spacing: 6
                     ComboBox {
                         id: joinBox
-                        width: 62
+                        width: 54
                         model: ["AND", "OR"]
                         currentIndex: model.join === "OR" ? 1 : 0
                         onActivated: condModel.setProperty(rowDelegate.rowIndex, "join", currentText)
@@ -77,25 +77,25 @@ Popup {
                     }
                     ComboBox {
                         id: colBox
-                        width: 118
+                        width: 96
                         model: sheet.tab ? sheet.tab.grid.headers : []
                         currentIndex: Math.max(0, (sheet.tab ? sheet.tab.grid.headers : []).indexOf(condModel.get(rowDelegate.rowIndex).col))
                         onActivated: condModel.setProperty(rowDelegate.rowIndex, "col", currentText)
                     }
                     ComboBox {
-                        width: 92
+                        width: 78
                         model: sheet.ops
                         currentIndex: Math.max(0, sheet.ops.indexOf(condModel.get(rowDelegate.rowIndex).op))
                         onActivated: condModel.setProperty(rowDelegate.rowIndex, "op", currentText)
                     }
                     TextField {
-                        width: Math.max(70, parent.width - 62 - 118 - 92 - 44)
+                        width: Math.max(64, parent.width - (joinBox.visible ? 60 : 0) - 96 - 78 - 36 - 24)
                         text: condModel.get(rowDelegate.rowIndex).val
                         visible: condModel.get(rowDelegate.rowIndex).op !== "IS NULL" && condModel.get(rowDelegate.rowIndex).op !== "IS NOT NULL"
                         placeholderText: qsTr("Value")
                         onTextEdited: condModel.setProperty(rowDelegate.rowIndex, "val", text)
                     }
-                    Item { width: 36; height: 36
+                    Item { width: 32; height: 36
                         Icon { anchors.centerIn: parent; name: "trash"; color: Theme.danger; size: 18 }
                         MouseArea { anchors.fill: parent; onClicked: condModel.remove(rowDelegate.rowIndex) }
                     }
