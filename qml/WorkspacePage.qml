@@ -291,7 +291,7 @@ Rectangle {
     }
 
     Component { id: tableComp
-        TableTabView { connectionLabel: ws.detail } }
+        TableTabView { connectionLabel: ws.detail; connectionStatus: ws.status; connectionError: ws.error !== "" } }
     Component { id: queryComp
         QueryTabView { connectionLabel: ws.detail } }
     Component { id: designComp

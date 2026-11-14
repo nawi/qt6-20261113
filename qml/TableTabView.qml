@@ -5,6 +5,8 @@ Rectangle {
     id: root
     property var tab: null
     property string connectionLabel
+    property string connectionStatus
+    property bool connectionError: false
     color: Theme.bg
     property int editRow: -1
     property int editCol: -1
@@ -27,28 +29,54 @@ Rectangle {
         anchors { fill: parent; leftMargin: Theme.margin; rightMargin: Theme.margin; topMargin: 8 }
         spacing: 8
 
-        Row {
+        // header: left = table info (2 rows), right = connection info (2 rows, mirrors top strip)
+        Column {
+            id: header
             width: parent.width
-            spacing: 6
-            Text {
-                width: parent.width - tools.width
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.tab ? (root.tab.table + "  ·  " + root.tab.grid.columnCount + " " + qsTr("columns")
-                                 + (root.tab.readOnly ? "  ·  " + qsTr("read-only") : "  ·  PK"))
-                               : ""
-                color: Theme.text2; font.pixelSize: 12; elide: Text.ElideRight
+            Row {
+                width: parent.width
+                Text {
+                    width: parent.width / 2
+                    text: root.tab ? root.tab.table : ""
+                    color: Theme.text; font.pixelSize: 13; font.weight: Font.DemiBold; elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width / 2
+                    horizontalAlignment: Text.AlignRight
+                    text: root.connectionLabel
+                    color: Theme.text2; font.pixelSize: 12; elide: Text.ElideRight
+                }
             }
             Row {
-                id: tools
-                spacing: 2
-                NavButton { icon: "search"; color: root.tab && root.tab.search !== "" ? Theme.accent : Theme.text2
-                            onClicked: { searchBar.shown = !searchBar.shown; if (!searchBar.shown) root.tab.setSearch("") } }
-                NavButton { icon: "share"; onClicked: root.exportCsv() }
-                NavButton { icon: "sliders"; onClicked: filterSheet.open() }
-                NavButton { icon: "plus"; active: root.tab && !root.tab.readOnly; onClicked: addSheet.open() }
-                NavButton { icon: "table"; onClicked: root.tab.openDesign() }
-                NavButton { icon: "check"; onClicked: root.tab.refresh() }
+                width: parent.width
+                Text {
+                    width: parent.width / 2
+                    text: root.tab ? (root.tab.grid.columnCount + " " + qsTr("columns")
+                                     + (root.tab.readOnly ? "  ·  " + qsTr("read-only") : "  ·  PK"))
+                                   : ""
+                    color: Theme.text2; font.pixelSize: 12; elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width / 2
+                    horizontalAlignment: Text.AlignRight
+                    text: root.connectionStatus
+                    color: root.connectionError ? Theme.danger : Theme.text2
+                    font.pixelSize: 12; elide: Text.ElideRight
+                }
             }
+        }
+
+        Row {
+            id: tools
+            width: parent.width
+            spacing: 2
+            NavButton { icon: "search"; color: root.tab && root.tab.search !== "" ? Theme.accent : Theme.text2
+                        onClicked: { searchBar.shown = !searchBar.shown; if (!searchBar.shown) root.tab.setSearch("") } }
+            NavButton { icon: "share"; onClicked: root.exportCsv() }
+            NavButton { icon: "sliders"; onClicked: filterSheet.open() }
+            NavButton { icon: "plus"; active: root.tab && !root.tab.readOnly; onClicked: addSheet.open() }
+            NavButton { icon: "table"; onClicked: root.tab.openDesign() }
+            NavButton { icon: "check"; onClicked: root.tab.refresh() }
         }
 
         Rectangle {
@@ -79,7 +107,8 @@ Rectangle {
         GridTable {
             id: grid
             width: parent.width
-            height: parent.height - 36 - 40 - (statusText.visible ? 18 : 0) - (searchBar.shown ? 48 : 0)
+            height: parent.height - header.height - tools.height - 40
+                     - (statusText.visible ? 18 : 0) - (searchBar.shown ? 48 : 0)
             grid: root.tab ? root.tab.grid : null
             interactive: true
             sortColumn: root.tab ? root.tab.sortColumn : -1
