@@ -4,7 +4,8 @@ import QtQuick.Controls
 ApplicationWindow {
     id: win
     visible: true
-    width: 412; height: 892          // desktop preview only
+    width: platform.debugStart === "wide" ? 960 : 412   // desktop preview only
+    height: platform.debugStart === "wide" ? 760 : 892
     title: "NawiDBMan"
     color: Theme.bg
 
@@ -39,12 +40,14 @@ ApplicationWindow {
             onAddRequested: stack.push(formPage, { connId: 0 })
             onEditRequested: function(id) { stack.push(formPage, { connId: id }) }
             onSettingsRequested: stack.push(settingsPage)
-            onOpenRequested: function(id, name) { toast.show(qsTr("Opening \"%1\" arrives in the next release.").arg(name)) }
+            onOpenRequested: function(id, name) { stack.push(workspacePage, { connId: id }) }
         } }
     Component { id: formPage
         ConnectionForm { onDone: stack.pop() } }
     Component { id: settingsPage
         SettingsPage { onDone: stack.pop() } }
+    Component { id: workspacePage
+        WorkspacePage { onDone: stack.pop() } }
 
     Toast { id: toast; y: win.height - height - Theme.safeBottom - 24; z: 10 }
 
@@ -58,12 +61,18 @@ ApplicationWindow {
 
     // desktop preview helper: NAWI_START=form|formssh|settings
     Timer {
-        interval: 50; running: platform.debugStart !== "" && platform.debugStart !== "onboarding"
+        interval: 50; repeat: false; running: platform.debugStart !== "" && platform.debugStart !== "onboarding"
         onTriggered: {
             var s = platform.debugStart
             if (s === "form") stack.push(formPage, { connId: 0 })
             else if (s === "formssh") stack.push(formPage, { connId: 2 })
             else if (s === "settings") stack.push(settingsPage)
+            else if (s === "wide" && connections.count > 0)
+                stack.push(workspacePage, { connId: connections.firstId() })
+            else if (s.startsWith("workspace") && connections.count > 0)
+                stack.push(workspacePage, {
+                    connId: s.indexOf("ssh") >= 0 ? connections.lastId() : connections.firstId()
+                })
         }
     }
 }

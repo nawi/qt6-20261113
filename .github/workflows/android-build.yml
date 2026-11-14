@@ -41,10 +41,40 @@ jobs:
       - name: Rust ssh_bridge tests + host staticlib
         working-directory: rust/ssh_bridge
         run: cargo test && cargo build --release
+      - name: Start SSH server for tunnel tests
+        run: |
+          sudo apt-get install -y --no-install-recommends openssh-server
+          sudo mkdir -p /run/sshd
+          D=/tmp/nawi-ssh && mkdir -p "$D"
+          ssh-keygen -q -t ed25519 -f "$D/host_key" -N ""
+          ssh-keygen -q -t ed25519 -f "$D/client_key" -N ""
+          cp "$D/client_key.pub" "$D/authorized_keys"
+          chmod 600 "$D/authorized_keys" "$D/client_key"
+          cat > "$D/sshd_config" <<EOF
+          Port 2222
+          ListenAddress 127.0.0.1
+          HostKey $D/host_key
+          AuthorizedKeysFile $D/authorized_keys
+          PubkeyAuthentication yes
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          UsePAM no
+          StrictModes no
+          PidFile $D/sshd.pid
+          AllowUsers $USER
+          EOF
+          sudo /usr/sbin/sshd -f "$D/sshd_config"
       - name: Build + run QtTest
         env:
           TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3306
+          TEST_DB_USER: root
           TEST_DB_PASS: testpass
+          TEST_DB_NAME: test
+          TEST_SSH_HOST: 127.0.0.1
+          TEST_SSH_PORT: 2222
+          TEST_SSH_USER: runner
+          TEST_SSH_KEY: /tmp/nawi-ssh/client_key
         run: |
           cmake -S . -B build-test -GNinja -DCMAKE_BUILD_TYPE=Debug
           cmake --build build-test

@@ -21,11 +21,14 @@ public:
     Q_INVOKABLE void remove(int id);
     Q_INVOKABLE QVariantMap get(int id) const;   // includes decrypted secrets
     Q_INVOKABLE void testConnection(const QVariantMap &c);
+    Q_INVOKABLE int firstId() const { return m_rows.isEmpty() ? 0 : m_rows.first().value("id").toInt(); }
+    Q_INVOKABLE int lastId() const { return m_rows.isEmpty() ? 0 : m_rows.last().value("id").toInt(); }
     static QString validate(const QVariantMap &c); // "" when valid
 signals:
     void countChanged();
     void testingChanged();
     void testFinished(bool ok, const QString &message);
+    void hostKeyNeeded(const QString &fingerprint, bool changed);
 private:
     void reload();
     QList<QVariantMap> m_rows;

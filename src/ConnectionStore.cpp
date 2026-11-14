@@ -1,5 +1,6 @@
 #include "ConnectionStore.h"
-#include "Probe.h"
+#include "DbClient.h"
+#include "SshTunnel.h"
 #include "Vault.h"
 #include <QFutureWatcher>
 #include <QSqlQuery>
@@ -16,8 +17,8 @@ const F kFields[] = {
     {"ssl", "ssl", false, "0", true}, {"color", "color", false, "#007AFF", false},
     {"sshHost", "ssh_host", false, "", false}, {"sshPort", "ssh_port", false, "22", true},
     {"sshUser", "ssh_user", false, "", false}, {"sshAuth", "ssh_auth", false, "0", true},
-    {"sshSecret", "ssh_secret_enc", true, "", false}, {"httpUrl", "http_url", false, "", false},
-    {"httpToken", "http_token_enc", true, "", false},
+    {"sshSecret", "ssh_secret_enc", true, "", false}, {"sshFp", "ssh_fp", false, "", false},
+    {"httpUrl", "http_url", false, "", false}, {"httpToken", "http_token_enc", true, "", false},
 };
 QString sel() { QStringList c{"id", "last_used"}; for (auto &f : kFields) c << f.col; return c.join(','); }
 bool validPort(const QVariant &v) { int p = v.toInt(); return p >= 1 && p <= 65535; }
@@ -148,23 +149,78 @@ void ConnectionStore::testConnection(const QVariantMap &c)
 {
     if (m_testing) return;
     if (const QString e = validate(c); !e.isEmpty()) { emit testFinished(false, e); return; }
-    if (c.value("mode").toInt() != 0) {
-        emit testFinished(false, tr("Testing tunnel modes is not available yet."));
+    if (c.value("mode").toInt() == 2) {
+        emit testFinished(false, tr("Testing the HTTP agent is not available yet."));
         return;
     }
     m_testing = true;
     emit testingChanged();
-    auto *w = new QFutureWatcher<QString>(this);
-    connect(w, &QFutureWatcher<QString>::finished, this, [this, w] {
-        const QString r = w->result();
+    auto *w = new QFutureWatcher<QVariantMap>(this);
+    connect(w, &QFutureWatcher<QVariantMap>::finished, this, [this, w] {
+        const QVariantMap r = w->result();
         w->deleteLater();
         m_testing = false;
         emit testingChanged();
-        emit testFinished(!r.startsWith("ERROR"), r.startsWith("ERROR") ? r.mid(7) : tr("Connected. Server version %1").arg(r));
+        if (r.value("hostKeyCode").toInt() != 0) {
+            emit hostKeyNeeded(r.value("fingerprint").toString(),
+                               r.value("hostKeyCode").toInt() == 4);
+            return;
+        }
+        if (!r.value("ok").toBool()) {
+            emit testFinished(false, r.value("error").toString());
+            return;
+        }
+        QStringList parts;
+        const QPair<const char *, QString> groups[] = {
+            {"tables", tr("Tables")}, {"views", tr("Views")}, {"functions", tr("Functions")},
+            {"procedures", tr("Procedures")}, {"triggers", tr("Triggers")}};
+        for (const auto &g : groups) {
+            const int n = r.value(g.first).toInt();
+            parts << tr("%1: %2").arg(g.second, n < 0 ? tr("n/a") : QString::number(n));
+        }
+        QString msg = tr("Connected. Server version %1\n%2").arg(r.value("version").toString(), parts.join(", "));
+        if (!r.value("cipher").toString().isEmpty())
+            msg += tr("\nTLS cipher: %1").arg(r.value("cipher").toString());
+        for (const QString &warn : r.value("warnings").toStringList())
+            msg += tr("\nNot enough privileges to list %1").arg(warn);
+        emit testFinished(true, msg);
     });
     w->setFuture(QtConcurrent::run([c] {
-        return Probe::serverVersion(c.value("host").toString().trimmed(), c.value("port").toUInt(),
-                                    c.value("user").toString().trimmed(), c.value("password").toString(),
-                                    c.value("database").toString().trimmed(), c.value("ssl").toBool());
+        DbClient::Config cfg;
+        cfg.host = c.value("host").toString().trimmed();
+        cfg.port = quint16(c.value("port").toUInt());
+        cfg.user = c.value("user").toString().trimmed();
+        cfg.password = c.value("password").toString();
+        cfg.database = c.value("database").toString().trimmed();
+        cfg.ssl = c.value("ssl").toBool();
+
+        unsigned long long tunnel = 0;
+        if (c.value("mode").toInt() == 1) {
+            const QByteArray host = c.value("sshHost").toString().trimmed().toUtf8();
+            const QByteArray user = c.value("sshUser").toString().trimmed().toUtf8();
+            const QByteArray secret = c.value("sshSecret").toString().toUtf8();
+            const QByteArray fp = c.value("sshFp").toString().toUtf8();
+            const QByteArray dbHost = cfg.host.toUtf8();
+            QByteArray err(512, '\0'), outFp(256, '\0');
+            unsigned short port = 0;
+            int rc = 0;
+            tunnel = ssh_bridge_connect(host.constData(), (unsigned short)c.value("sshPort").toUInt(),
+                                        user.constData(), c.value("sshAuth").toInt(), secret.constData(),
+                                        fp.constData(), dbHost.constData(), cfg.port, 15,
+                                        &port, outFp.data(), outFp.size(), &rc, err.data(), err.size());
+            if (!tunnel) {
+                QVariantMap fail;
+                fail["ok"] = false;
+                fail["error"] = QString::fromUtf8(err.constData());
+                fail["fingerprint"] = QString::fromUtf8(outFp.constData());
+                fail["hostKeyCode"] = (rc == 3 || rc == 4) ? rc : 0;
+                return fail;
+            }
+            cfg.host = "127.0.0.1";
+            cfg.port = port;
+        }
+        QVariantMap r = DbClient::test(cfg);
+        if (tunnel) ssh_bridge_disconnect(tunnel);
+        return r;
     }));
 }

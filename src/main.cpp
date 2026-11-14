@@ -6,11 +6,14 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QTimer>
+#include <qqml.h>
 #include "AppSettings.h"
 #include "ConnectionStore.h"
 #include "Db.h"
 #include "Platform.h"
 #include "Probe.h"
+#include "SshTunnel.h"
+#include "Workspace.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +35,7 @@ int main(int argc, char *argv[])
 
     AppSettings settings;
     ConnectionStore connections;
+    TunnelManager tunnels(&connections);
     Platform platform;
 
 #ifndef Q_OS_ANDROID
@@ -47,7 +51,10 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    qmlRegisterType<Workspace>("NawiDBMan", 1, 0, "Workspace");
+
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("tunnelManager", &tunnels);
     engine.rootContext()->setContextProperty("appSettings", &settings);
     engine.rootContext()->setContextProperty("connections", &connections);
     engine.rootContext()->setContextProperty("platform", &platform);

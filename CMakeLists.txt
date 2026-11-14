@@ -33,7 +33,7 @@ else()
     set(NATIVE_LIBS "${MARIADB_LIB}" OpenSSL::SSL OpenSSL::Crypto "${SSH_BRIDGE_LIB}" dl pthread m)
 endif()
 
-add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp)
+add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp src/DbClient.cpp src/DbSession.cpp src/SshTunnel.cpp src/GridModel.cpp src/Workspace.cpp)
 target_include_directories(core PUBLIC src ${NATIVE_INCLUDES})
 target_link_libraries(core PUBLIC Qt6::Core Qt6::Sql Qt6::Concurrent Qt6::Gui ${NATIVE_LIBS})
 target_compile_definitions(core PUBLIC APP_VERSION="${PROJECT_VERSION}")
@@ -49,6 +49,8 @@ qt_add_qml_module(NawiDBMan
         qml/Main.qml qml/Icon.qml qml/NavBar.qml qml/NavButton.qml qml/Group.qml qml/Cell.qml
         qml/FieldCell.qml qml/Segmented.qml qml/IOSSwitch.qml qml/PrimaryButton.qml qml/ActionSheet.qml
         qml/Toast.qml qml/FormFlickable.qml qml/Onboarding.qml qml/ConnectionList.qml qml/ConnectionForm.qml qml/SettingsPage.qml
+        qml/WorkspacePage.qml qml/GridTable.qml qml/TableTabView.qml qml/QueryTabView.qml qml/DesignTabView.qml
+        qml/FilterSheet.qml qml/CellEditorSheet.qml qml/AddRowSheet.qml
 )
 target_link_libraries(NawiDBMan PRIVATE Qt6::Quick Qt6::QuickControls2 core)
 
@@ -72,7 +74,7 @@ endif()
 # --- tests (desktop only) ----------------------------------------------------------
 if(NOT ANDROID)
     enable_testing()
-    foreach(t probe storage)
+    foreach(t probe storage dbclient session tunnel)
         qt_add_executable(tst_${t} tests/tst_${t}.cpp)
         target_link_libraries(tst_${t} PRIVATE Qt6::Test core)
         add_test(NAME ${t} COMMAND tst_${t})

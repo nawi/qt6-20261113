@@ -17,6 +17,13 @@ static const QStringList kMigrations = {
     " ssh_auth INTEGER NOT NULL DEFAULT 0, ssh_secret_enc TEXT NOT NULL DEFAULT '',"
     " http_url TEXT NOT NULL DEFAULT '', http_token_enc TEXT NOT NULL DEFAULT '',"
     " last_used INTEGER NOT NULL DEFAULT 0);",
+    // v2: SSH host key (TOFU), persisted tabs, query history
+    "ALTER TABLE connections ADD COLUMN ssh_fp TEXT NOT NULL DEFAULT '';"
+    "CREATE TABLE tabs(id INTEGER PRIMARY KEY AUTOINCREMENT, conn_id INTEGER NOT NULL, kind TEXT NOT NULL,"
+    " ref TEXT NOT NULL DEFAULT '', extra TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',"
+    " pos INTEGER NOT NULL DEFAULT 0);"
+    "CREATE TABLE query_history(id INTEGER PRIMARY KEY AUTOINCREMENT, conn_id INTEGER NOT NULL,"
+    " sql TEXT NOT NULL, ts INTEGER NOT NULL);",
 };
 
 bool Db::open(const QString &path)

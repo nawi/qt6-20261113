@@ -13,13 +13,14 @@ Rectangle {
     property string labelColor: Theme.labelColors[0]
     property string testMessage
     property bool testOk: false
+    property string trustedFp
 
     function collect() {
         return {
             id: connId, name: fName.text, mode: mode, host: fHost.text, port: fPort.text, user: fUser.text,
             password: fPass.text, database: fDb.text, ssl: ssl, color: labelColor,
             sshHost: fSshHost.text, sshPort: fSshPort.text, sshUser: fSshUser.text, sshAuth: sshAuth,
-            sshSecret: sshAuth === 0 ? fSshPass.text : keyArea.text,
+            sshSecret: sshAuth === 0 ? fSshPass.text : keyArea.text, sshFp: trustedFp,
             httpUrl: fUrl.text, httpToken: fToken.text
         }
     }
@@ -30,6 +31,7 @@ Rectangle {
         fPass.text = c.password; fDb.text = c.database; ssl = c.ssl === 1 || c.ssl === true; labelColor = c.color
         fSshHost.text = c.sshHost; fSshPort.text = c.sshPort; fSshUser.text = c.sshUser; sshAuth = c.sshAuth
         if (sshAuth === 0) fSshPass.text = c.sshSecret; else keyArea.text = c.sshSecret
+        trustedFp = c.sshFp || ""
         fUrl.text = c.httpUrl; fToken.text = c.httpToken
     }
     Component.onCompleted: load()
@@ -37,6 +39,11 @@ Rectangle {
     Connections {
         target: connections
         function onTestFinished(ok, message) { page.testOk = ok; page.testMessage = message }
+        function onHostKeyNeeded(fingerprint, changed) {
+            trustSheet.fingerprint = fingerprint
+            trustSheet.changed = changed
+            trustSheet.open()
+        }
     }
 
     FormFlickable {
@@ -205,6 +212,21 @@ Rectangle {
                 var e = connections.save(page.collect())
                 if (e === "") page.done(); else { page.testOk = false; page.testMessage = e; flick.contentY = 0 }
             }
+        }
+    }
+
+    ActionSheet {
+        id: trustSheet
+        property string fingerprint
+        property bool changed: false
+        title: changed ? qsTr("SSH host key changed") : qsTr("Unknown SSH host key")
+        message: changed
+                 ? qsTr("The server key no longer matches the saved one. Connection refused.\n\nSHA256 %1").arg(fingerprint)
+                 : qsTr("Verify this fingerprint with your server administrator.\n\nSHA256 %1").arg(fingerprint)
+        actions: changed ? [] : [{ text: qsTr("Trust and test") }]
+        onChosen: {
+            page.trustedFp = fingerprint
+            connections.testConnection(page.collect())
         }
     }
 
