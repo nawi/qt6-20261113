@@ -655,8 +655,8 @@ void Workspace::openQuery()
 
 void Workspace::addTab(Tab *tab, bool persist)
 {
+    m_current = m_tabs->rowCount();
     m_tabs->add(tab);
-    m_current = m_tabs->rowCount() - 1;
     emit currentChanged();
     if (persist) persistTabs();
 }

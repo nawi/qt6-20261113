@@ -156,8 +156,8 @@ Rectangle {
                     anchors.fill: parent
                     onClicked: {
                         page.showingObjects = false
-                        if (kind === "table" || kind === "view") ws.openTable(name, kind)
-                        else ws.openDesign(kind, name)
+                        if (model.kind === "table" || model.kind === "view") ws.openTable(model.name, model.kind)
+                        else ws.openDesign(model.kind, model.name)
                     }
                 }
             }
