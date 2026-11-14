@@ -54,7 +54,7 @@ Popup {
         ListView {
             id: list
             width: parent.width
-            height: Math.min(condModel.count * 52 + 48, sheet.height - 160)   // +48 = "Add condition" footer (must show with 0 rows)
+            height: Math.min(condModel.count * 52, sheet.height - 220)
             model: condModel
             clip: true
 
@@ -101,14 +101,15 @@ Popup {
                     }
                 }
             }
-            footer: Item {
-                width: list.width; height: 48
-                Text { anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-                       text: qsTr("+ Add condition"); color: Theme.accent; font.pixelSize: 15
-                       MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked:
-                           condModel.append({ col: sheet.tab && sheet.tab.grid.columnCount > 0 ? sheet.tab.grid.headers[0] : "",
-                                              op: "=", val: "", join: "AND" }) } }
-            }
+        }
+
+        Item {
+            width: parent.width; height: 48
+            Text { anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
+                   text: qsTr("+ Add condition"); color: Theme.accent; font.pixelSize: 15
+                   MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked:
+                       condModel.append({ col: sheet.tab && sheet.tab.grid.columnCount > 0 ? sheet.tab.grid.headers[0] : "",
+                                          op: "=", val: "", join: "AND" }) } }
         }
 
         Row {
