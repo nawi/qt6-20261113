@@ -56,14 +56,16 @@ Rectangle {
             radius: Theme.radius
             color: Theme.card
             clip: true
-            ScrollView {
-                id: queryScroll
+            Flickable {
+                id: queryFlick
                 anchors.fill: parent
                 anchors.margins: 8
                 clip: true
-                TextArea {
+                flickableDirection: Flickable.VerticalFlick
+                ScrollBar.vertical: ScrollBar {}
+                TextArea.flickable: TextArea {
                     id: editor
-                    width: queryScroll.availableWidth
+                    width: queryFlick.width
                     text: root.tab ? root.tab.editorText : ""
                     onTextChanged: if (root.tab) root.tab.editorText = text
                     color: Theme.text

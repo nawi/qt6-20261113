@@ -142,13 +142,15 @@ Rectangle {
                     property bool isFirst: false; property bool isLast: true
                     clip: true
                     Rectangle { anchors { top: parent.top; right: parent.right } width: parent.width - Theme.margin; height: 0.5; color: Theme.sep }
-                    ScrollView {
-                        id: keyScroll
+                    Flickable {
+                        id: keyFlick
                         anchors { fill: parent; margins: 8 }
                         clip: true
-                        TextArea {
+                        flickableDirection: Flickable.VerticalFlick
+                        ScrollBar.vertical: ScrollBar {}
+                        TextArea.flickable: TextArea {
                             id: keyArea
-                            width: keyScroll.availableWidth
+                            width: keyFlick.width
                             background: null
                             color: Theme.text
                             placeholderText: qsTr("Paste private key (-----BEGIN ... PRIVATE KEY-----)")

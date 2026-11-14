@@ -21,26 +21,39 @@ Popup {
     closePolicy: Popup.CloseOnEscape
     background: Rectangle { radius: 16; color: Theme.card }
 
+    onAboutToShow: input.text = sheet.isNull ? "" : sheet.value
+    onValueChanged: if (!sheet.isNull) input.text = sheet.value
+    onIsNullChanged: if (sheet.isNull) input.text = ""
+
     contentItem: Column {
         spacing: 14
         Text { width: parent.width; text: sheet.columnName; color: Theme.text2
                font { pixelSize: 13; weight: Font.DemiBold; capitalization: Font.AllUppercase } }
-        ScrollView {
-            id: scroll
+        Rectangle {
             width: parent.width
             height: 140
+            radius: 10
+            color: Theme.fill
             clip: true
 
-            TextArea {
-                id: input
-                width: scroll.availableWidth
-                text: sheet.isNull ? "" : sheet.value
-                enabled: !sheet.isNull && !sheet.readOnly
-                color: Theme.text
-                background: Rectangle { radius: 10; color: Theme.fill }
-                font { pixelSize: 15; family: "monospace" }
-                wrapMode: TextArea.WrapAnywhere
-                selectByMouse: true
+            Flickable {
+                id: flick
+                anchors.fill: parent
+                anchors.margins: 6
+                clip: true
+                flickableDirection: Flickable.VerticalFlick
+                ScrollBar.vertical: ScrollBar {}
+
+                TextArea.flickable: TextArea {
+                    id: input
+                    width: flick.width
+                    enabled: !sheet.isNull && !sheet.readOnly
+                    color: Theme.text
+                    background: null
+                    font { pixelSize: 15; family: "monospace" }
+                    wrapMode: TextArea.WrapAnywhere
+                    selectByMouse: true
+                }
             }
         }
         Row {

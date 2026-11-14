@@ -40,14 +40,16 @@ Rectangle {
             radius: Theme.radius
             color: Theme.card
             clip: true
-            ScrollView {
-                id: ddlScroll
+            Flickable {
+                id: ddlFlick
                 anchors.fill: parent
                 anchors.margins: 10
                 clip: true
-                TextArea {
+                flickableDirection: Flickable.VerticalFlick
+                ScrollBar.vertical: ScrollBar {}
+                TextArea.flickable: TextArea {
                     id: ddlArea
-                    width: ddlScroll.availableWidth
+                    width: ddlFlick.width
                     readOnly: true
                     selectByMouse: true
                     text: root.tab ? root.tab.ddlText : ""
