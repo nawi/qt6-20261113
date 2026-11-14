@@ -1,71 +1,40 @@
-#!/bin/bash
-# Local build wrapper: setup env + build APK
+#!/usr/bin/env bash
+# Local APK build, mirrors .github/workflows/android-build.yml (build-android job).
+# Needs: Qt 6.12 via aqt in ./6.12.0 (gcc_64 + android_arm64_v8a), NDK 27.2, rustup target aarch64-linux-android.
+# Usage: scripts/build-local.sh [--install]   (--install = adb install -r + launch)
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-set -e
+export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}
+export ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-$ANDROID_SDK_ROOT/ndk/27.2.12479018}
+QT=${QT:-$PWD/6.12.0}
+KEYS=${KEYS:-$HOME/.android-keys}
+[ -x "$QT/android_arm64_v8a/bin/qt-cmake" ] || { echo "Qt Android missing: aqt install-qt all_os android 6.12.0 android_arm64_v8a"; exit 1; }
+[ -d "$ANDROID_NDK_ROOT" ] || { echo "NDK missing: sdkmanager 'ndk;27.2.12479018'"; exit 1; }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+# Native deps + Rust: scripts skip work when outputs exist / are up to date.
+./scripts/build-deps.sh
+./scripts/build-rust.sh
 
-# Setup env
-ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
-NDK_VERSION=$(ls -d "$ANDROID_SDK_ROOT/ndk"/* 2>/dev/null | xargs basename -a | sort -V | tail -1)
-if [ -z "$NDK_VERSION" ]; then
-    echo "ERROR: No NDK found in $ANDROID_SDK_ROOT/ndk/"
-    exit 1
-fi
+mkdir -p deps/ssl
+for l in libssl_3 libcrypto_3; do
+  [ -f deps/ssl/$l.so ] || curl -fsSL -o deps/ssl/$l.so https://github.com/KDAB/android_openssl/raw/master/ssl_3/arm64-v8a/$l.so
+done
 
-ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+# Same keystore as CI secrets, so local APK updates CI-installed app without uninstall.
+export QT_ANDROID_KEYSTORE_PATH=$KEYS/nawidbman.jks QT_ANDROID_KEYSTORE_ALIAS=nawidbman
+export QT_ANDROID_KEYSTORE_STORE_PASS=$(cat "$KEYS/nawidbman.pass") QT_ANDROID_KEYSTORE_KEY_PASS=$(cat "$KEYS/nawidbman.pass")
 
-# Use Qt 6.12 from aqt (lokal download)
-QT_INSTALL_DIR="$PROJECT_DIR/6.12.0"
-if [ -d "$QT_INSTALL_DIR/gcc_64" ]; then
-    QT_HOST_PATH="$QT_INSTALL_DIR/gcc_64"
-else
-    # Fallback system Qt (6.11)
-    QT_HOST_PATH="/usr"
-fi
-Qt6_DIR="$QT_HOST_PATH/lib/cmake/Qt6"
-
-echo "=== Lokal build setup ==="
-echo "Android SDK: $ANDROID_SDK_ROOT"
-echo "Android NDK: $ANDROID_NDK_ROOT"
-echo "Qt host: $QT_HOST_PATH"
-echo ""
-
-# Build deps (OpenSSL, MariaDB)
-if [ ! -d "$PROJECT_DIR/deps/out" ]; then
-    echo "=== Building native deps ==="
-    cd "$PROJECT_DIR"
-    ANDROID_NDK_ROOT="$ANDROID_NDK_ROOT" bash "$SCRIPT_DIR/build-deps.sh"
-fi
-
-# Build Rust ssh_bridge
-echo "=== Building ssh_bridge ==="
-cd "$PROJECT_DIR"
-ANDROID_NDK_ROOT="$ANDROID_NDK_ROOT" bash "$SCRIPT_DIR/build-rust.sh"
-
-# Configure & build APK
-echo "=== Configuring CMake ==="
-cd "$PROJECT_DIR"
-cmake -S . -B build-local -GNinja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="/usr/lib/cmake" \
-    -DQt6_DIR="$Qt6_DIR" \
-    -DQT_ANDROID_SIGN_APK=ON \
-    -DNAWI_SSL_LIBS_DIR="$PROJECT_DIR/deps/ssl" \
-    -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
-    -DANDROID_NDK_ROOT="$ANDROID_NDK_ROOT"
-
-echo "=== Building APK ==="
+[ -f build-local/CMakeCache.txt ] || "$QT/android_arm64_v8a/bin/qt-cmake" -S . -B build-local -GNinja \
+  -DCMAKE_BUILD_TYPE=Release -DQT_HOST_PATH="$QT/gcc_64" -DQT_ANDROID_SIGN_APK=ON \
+  -DNAWI_SSL_LIBS_DIR="$PWD/deps/ssl" -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" -DANDROID_NDK_ROOT="$ANDROID_NDK_ROOT"
 cmake --build build-local --target apk --parallel
 
-APK=$(find build-local -name '*signed*.apk' -o -name '*release*.apk' | head -n1)
-if [ -z "$APK" ]; then
-    echo "ERROR: APK not found"
-    exit 1
-fi
-
 mkdir -p out
-cp "$APK" out/NawiDBMan-arm64-local.apk
-echo ""
-echo "✓ Build complete: out/NawiDBMan-arm64-local.apk"
+cp "$(find build-local -name '*signed*.apk' | head -n1)" out/NawiDBMan-arm64-local.apk
+echo "APK: out/NawiDBMan-arm64-local.apk"
+
+if [ "${1:-}" = "--install" ]; then
+  adb install -r out/NawiDBMan-arm64-local.apk
+  adb shell am start -n com.nawi.dbman/org.qtproject.qt.android.bindings.QtActivity
+fi
