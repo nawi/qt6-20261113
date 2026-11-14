@@ -44,6 +44,9 @@ class TableTab : public Tab {
     Q_PROPERTY(QVariantList columns READ columns NOTIFY changed)
     Q_PROPERTY(QVariantList filters READ filters NOTIFY changed)
     Q_PROPERTY(int pkCount READ pkCount NOTIFY changed)
+    Q_PROPERTY(int sortColumn READ sortColumn NOTIFY changed)
+    Q_PROPERTY(bool sortDesc READ sortDesc NOTIFY changed)
+    Q_PROPERTY(QString search READ search NOTIFY changed)
 public:
     TableTab(Workspace *ws, const QString &table, const QString &objKind, const QVariantMap &conn,
              const QString &host, int port, QObject *parent = nullptr);
@@ -58,6 +61,9 @@ public:
     QVariantList columns() const { return m_columns; }
     QVariantList filters() const { return m_filters; }
     int pkCount() const { return m_pk.size(); }
+    int sortColumn() const { return m_columns.isEmpty() ? -1 : m_sortCol; }
+    bool sortDesc() const { return m_sortDesc; }
+    QString search() const { return m_search; }
     void shutdown() override;
 
     Q_INVOKABLE void refresh();
@@ -65,6 +71,8 @@ public:
     Q_INVOKABLE void prevPage();
     Q_INVOKABLE void setFilters(const QVariantList &filters);
     Q_INVOKABLE void clearFilters();
+    Q_INVOKABLE void toggleSort(int column);   // none -> ASC -> DESC -> none
+    Q_INVOKABLE void setSearch(const QString &text);
     Q_INVOKABLE void openDesign();
     Q_INVOKABLE void updateCell(int row, const QString &column, const QString &value, bool isNull);
     Q_INVOKABLE void insertRow(const QVariantMap &values);
@@ -92,6 +100,10 @@ private:
     QVariantList m_columns;
     QVariantList m_filters;
     int m_offset = 0;
+    int m_sortCol = -1;
+    bool m_sortDesc = false;
+    QString m_search;
+    QString m_sortName;
     bool m_hasMore = false;
     bool m_readOnly = true;
     bool m_connected = false;

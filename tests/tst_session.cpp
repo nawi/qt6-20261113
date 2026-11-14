@@ -116,6 +116,18 @@ private slots:
         QCOMPARE(e.value("rows").toList().size(), 0);
     }
 
+    void sortAndSearch() {
+        QVariantMap r = run(*s, [this] { s->loadTable(table, 0, 50, {}, "`v` DESC"); }, "table");
+        QVERIFY2(r.value("ok").toBool(), qPrintable(r.value("error").toString()));
+        QCOMPARE(r.value("rows").toList()[0].toList()[2].toString(), QString("3.00"));
+        r = run(*s, [this] { s->loadTable(table, 0, 50, {}, {}, "b", {"id", "name", "v"}); }, "table");
+        QVERIFY(r.value("ok").toBool());
+        QCOMPARE(r.value("rows").toList().size(), 1);
+        // LIKE wildcards in the search text are literal
+        r = run(*s, [this] { s->loadTable(table, 0, 50, {}, {}, "%", {"name"}); }, "table");
+        QCOMPARE(r.value("rows").toList().size(), 0);
+    }
+
     void editInsertDelete() {
         const QVariantMap page = run(*s, [this] { s->loadTable(table, 0, 50, {}); }, "table");
         const QVariantList rows = page.value("rows").toList();

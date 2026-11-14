@@ -253,14 +253,14 @@ void DbSession::loadObjects()
 }
 
 void DbSession::loadTable(const QString &table, int offset, int limit, const QVariantList &filters,
-                          const QString &orderBy)
+                          const QString &orderBy, const QString &search, const QStringList &searchColumns)
 {
-    submit("table", [this, table, offset, limit, filters, orderBy](DbClient &db) {
+    submit("table", [this, table, offset, limit, filters, orderBy, search, searchColumns](DbClient &db) {
         const QString dbName = m_conn.value("database").toString();
         QString pkError;
         const QStringList pk = loadPrimaryKey(db, dbName, table, &pkError);
         QString sql = "SELECT * FROM " + Sql::qualified(dbName, table)
-                      + Sql::filterWhere(filters);
+                      + Sql::whereClause(filters, search, searchColumns);
         if (!orderBy.isEmpty()) sql += " ORDER BY " + orderBy;
         sql += QString(" LIMIT %1 OFFSET %2").arg(limit + 1).arg(offset);
         QueryResult r = db.query(sql, limit + 1);

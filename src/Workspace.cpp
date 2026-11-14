@@ -81,7 +81,14 @@ void TableTab::load()
     m_error.clear();
     emit busyChanged();
     emit changed();
-    m_session->loadTable(m_table, m_offset, qMax(10, Db::get("pageSize", "100").toInt()), m_filters);
+    QStringList searchCols;
+    for (const QVariant &c : m_columns) {
+        const QVariantMap cm = c.toMap();
+        if (!cm.value("binary").toBool()) searchCols << cm.value("name").toString();
+    }
+    m_session->loadTable(m_table, m_offset, qMax(10, Db::get("pageSize", "100").toInt()), m_filters,
+                         m_sortName.isEmpty() ? QString() : Sql::quoteId(m_sortName) + (m_sortDesc ? " DESC" : " ASC"),
+                         m_search, searchCols);
 }
 
 void TableTab::refresh() { m_offset = 0; load(); }
@@ -110,6 +117,30 @@ void TableTab::setFilters(const QVariantList &filters)
 void TableTab::clearFilters()
 {
     m_filters.clear();
+    m_offset = 0;
+    load();
+}
+
+void TableTab::toggleSort(int column)
+{
+    if (column < 0 || column >= m_columns.size()) return;
+    const QString name = m_columns[column].toMap().value("name").toString();
+    if (m_sortName == name) {
+        if (!m_sortDesc) m_sortDesc = true;
+        else { m_sortName.clear(); m_sortCol = -1; m_sortDesc = false; }
+    } else {
+        m_sortName = name;
+        m_sortDesc = false;
+    }
+    if (!m_sortName.isEmpty()) m_sortCol = column;
+    m_offset = 0;
+    load();
+}
+
+void TableTab::setSearch(const QString &text)
+{
+    if (text == m_search) return;
+    m_search = text;
     m_offset = 0;
     load();
 }

@@ -13,6 +13,8 @@ public:
     QString debugStart() const { return qEnvironmentVariable("NAWI_START"); }
     Q_INVOKABLE QString accentHex(bool dark) const;  // "" when unavailable
     Q_INVOKABLE void setLightBars(bool light) const;
+    // Saves text to the app cache and opens the Android share sheet. Returns false on desktop/failure.
+    Q_INVOKABLE bool shareText(const QString &fileName, const QString &text, const QString &mime) const;
 signals:
     void insetsChanged();
 private:

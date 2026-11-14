@@ -21,6 +21,7 @@ public:
     void clear();
     void setRows(const QStringList &headers, const QVariantList &rows, const QStringList &types = {});
 
+    Q_INVOKABLE QString toCsv() const;   // RFC 4180, NULL -> empty field
     Q_INVOKABLE QVariant cell(int row, int col) const;
     Q_INVOKABLE bool isNull(int row, int col) const;
     Q_INVOKABLE int widthFor(int col) const;

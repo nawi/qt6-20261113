@@ -1,4 +1,5 @@
 #include "GridModel.h"
+#include <QRegularExpression>
 #include <QVariantMap>
 
 GridModel::GridModel(QObject *parent) : QAbstractListModel(parent) {}
@@ -78,4 +79,25 @@ bool GridModel::isNull(int row, int col) const
 int GridModel::widthFor(int col) const
 {
     return col >= 0 && col < m_widths.size() ? m_widths[col].toInt() : 80;
+}
+
+QString GridModel::toCsv() const
+{
+    auto field = [](const QString &v) {
+        if (!v.contains(QRegularExpression("[\",\r\n]"))) return v;
+        QString q = v;
+        q.replace('"', "\"\"");
+        return '"' + q + '"';
+    };
+    QStringList lines;
+    QStringList head;
+    for (const QString &h : m_headers) head << field(h);
+    lines << head.join(',');
+    for (const QVariantList &r : m_rows) {
+        QStringList f;
+        for (int c = 0; c < m_headers.size(); ++c)
+            f << (r.value(c).isNull() ? QString() : field(r.value(c).toString()));
+        lines << f.join(',');
+    }
+    return lines.join("\r\n") + "\r\n";
 }

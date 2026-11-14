@@ -57,3 +57,18 @@ void Platform::setLightBars(bool light) const
     Q_UNUSED(light);
 #endif
 }
+
+bool Platform::shareText(const QString &fileName, const QString &text, const QString &mime) const
+{
+#ifdef Q_OS_ANDROID
+    const QJniObject name = QJniObject::fromString(fileName);
+    const QJniObject data = QJniObject::fromString(text);
+    const QJniObject type = QJniObject::fromString(mime);
+    return QJniObject::callStaticMethod<jboolean>("com/nawi/dbman/Vault", "shareText",
+            "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
+            ctx().object(), name.object(), data.object(), type.object());
+#else
+    Q_UNUSED(fileName); Q_UNUSED(text); Q_UNUSED(mime);
+    return false;
+#endif
+}

@@ -33,7 +33,8 @@ public:
     void runQuery(const QString &sql, int limit);
     void loadObjects();
     void loadTable(const QString &table, int offset, int limit, const QVariantList &filters,
-                   const QString &orderBy = {});
+                   const QString &orderBy = {}, const QString &search = {},
+                   const QStringList &searchColumns = {});
     void loadDesign(const QString &kind, const QString &name);
     void updateCell(const QString &table, const QString &column, const QString &value, bool isNull,
                     const QVariantMap &pk);

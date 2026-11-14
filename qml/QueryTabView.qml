@@ -42,6 +42,8 @@ Rectangle {
                         else root.tab.run()
                     }
                 }
+                NavButton { icon: "share"; active: root.tab && root.tab.grid.rowCount > 0
+                            onClicked: platform.shareText("query.csv", root.tab.grid.toCsv(), "text/csv") }
                 NavButton { text: qsTr("Clear"); onClicked: if (root.tab) root.tab.clearResult() }
                 NavButton { text: qsTr("History"); onClicked: { if (root.tab) root.tab.loadHistory(); historySheet.open() } }
             }

@@ -2,6 +2,8 @@ package com.nawi.dbman;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.graphics.Insets;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
@@ -11,6 +13,8 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 
@@ -105,5 +109,29 @@ public final class Vault {
                 }
             });
         } catch (Throwable t) { /* cosmetic only */ }
+    }
+
+    /** Writes text to cache/exports/<name> and opens the system share sheet. */
+    public static boolean shareText(Context ctx, String name, String text, String mime) {
+        try {
+            final Activity a = (Activity) ctx;
+            File dir = new File(a.getCacheDir(), "exports");
+            if (!dir.isDirectory() && !dir.mkdirs()) return false;
+            File f = new File(dir, new File(name).getName());   // strip any path part
+            try (FileOutputStream o = new FileOutputStream(f)) {
+                o.write(text.getBytes(StandardCharsets.UTF_8));
+            }
+            final Uri uri = androidx.core.content.FileProvider.getUriForFile(a, a.getPackageName() + ".nawishare", f);
+            final Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType(mime);
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            a.runOnUiThread(new Runnable() {
+                public void run() { a.startActivity(Intent.createChooser(send, null)); }
+            });
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 }

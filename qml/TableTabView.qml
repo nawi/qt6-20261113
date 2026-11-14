@@ -10,6 +10,13 @@ Rectangle {
     property int editCol: -1
     property string status
 
+    function exportCsv() {
+        if (!root.tab) return
+        var ok = platform.shareText(root.tab.table + ".csv", root.tab.grid.toCsv(), "text/csv")
+        root.status = ok ? qsTr("Exported %1 rows (current page).").arg(root.tab.grid.rowCount)
+                         : qsTr("Export is only available on Android.")
+    }
+
     Connections {
         target: root.tab
         function onWriteFinished(ok, message) { root.status = message }
@@ -34,11 +41,32 @@ Rectangle {
             Row {
                 id: tools
                 spacing: 2
+                NavButton { icon: "search"; color: root.tab && root.tab.search !== "" ? Theme.accent : Theme.text2
+                            onClicked: { searchBar.shown = !searchBar.shown; if (!searchBar.shown) root.tab.setSearch("") } }
+                NavButton { icon: "share"; onClicked: root.exportCsv() }
                 NavButton { icon: "sliders"; onClicked: filterSheet.open() }
                 NavButton { icon: "plus"; active: root.tab && !root.tab.readOnly; onClicked: addSheet.open() }
                 NavButton { icon: "table"; onClicked: root.tab.openDesign() }
                 NavButton { icon: "check"; onClicked: root.tab.refresh() }
             }
+        }
+
+        Rectangle {
+            id: searchBar
+            property bool shown: false
+            width: parent.width; height: shown ? 40 : 0; visible: shown
+            radius: 10; color: Theme.fill
+            TextField {
+                id: searchField
+                anchors { fill: parent; leftMargin: 6; rightMargin: 6 }
+                placeholderText: qsTr("Search all columns (current filter)")
+                placeholderTextColor: Theme.text2
+                color: Theme.text; font.pixelSize: 15
+                background: null
+                inputMethodHints: Qt.ImhNoPredictiveText
+                onAccepted: { root.tab.setSearch(text); Qt.inputMethod.hide() }
+            }
+            onShownChanged: if (shown) searchField.forceActiveFocus()
         }
 
         Text {
@@ -51,9 +79,12 @@ Rectangle {
         GridTable {
             id: grid
             width: parent.width
-            height: parent.height - 36 - 40 - (statusText.visible ? 18 : 0)
+            height: parent.height - 36 - 40 - (statusText.visible ? 18 : 0) - (searchBar.shown ? 48 : 0)
             grid: root.tab ? root.tab.grid : null
             interactive: true
+            sortColumn: root.tab ? root.tab.sortColumn : -1
+            sortDesc: root.tab ? root.tab.sortDesc : false
+            onHeaderTapped: function(col) { root.tab.toggleSort(col) }
             onCellTapped: function(row, col) {
                 root.editRow = row; root.editCol = col
                 editSheet.columnName = root.tab.grid.headers[col]

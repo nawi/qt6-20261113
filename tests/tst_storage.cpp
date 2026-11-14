@@ -3,6 +3,8 @@
 #include "AppSettings.h"
 #include "ConnectionStore.h"
 #include "Db.h"
+#include "GridModel.h"
+#include "Sql.h"
 #include "Vault.h"
 
 class TstStorage : public QObject {
@@ -13,6 +15,23 @@ class TstStorage : public QObject {
     }
 private slots:
     void initTestCase() { QVERIFY(Db::open(":memory:")); }
+
+    void csvExport() {
+        GridModel g;
+        g.setRows({"id", "note"}, {QVariant(QVariantList{1, QString("a,b")}),
+                                   QVariant(QVariantList{2, QString("say \"hi\"\nnow")}),
+                                   QVariant(QVariantList{3, QVariant()})});
+        QCOMPARE(g.toCsv(), QString("id,note\r\n1,\"a,b\"\r\n2,\"say \"\"hi\"\"\nnow\"\r\n3,\r\n"));
+    }
+
+    void searchWhere() {
+        QCOMPARE(Sql::whereClause({}, "", {"a"}), QString());
+        QCOMPARE(Sql::whereClause({}, "x", {"a"}), QString(" WHERE (CAST(`a` AS CHAR) LIKE '%x%')"));
+        QVERIFY(Sql::whereClause({}, "50%", {"a"}).contains("50\\\\%"));
+        const QVariantList f{QVariantMap{{"column", "k"}, {"op", "="}, {"value", "1"}}};
+        QCOMPARE(Sql::whereClause(f, "x", {"a", "b"}),
+                 QString(" WHERE (`k` = '1') AND (CAST(`a` AS CHAR) LIKE '%x%' OR CAST(`b` AS CHAR) LIKE '%x%')"));
+    }
 
     void vaultRoundTrip() {
         QCOMPARE(Vault::decrypt(Vault::encrypt(QString::fromUtf8("pässwörd'\"; DROP"))), QString::fromUtf8("pässwörd'\"; DROP"));

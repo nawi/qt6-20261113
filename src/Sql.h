@@ -77,4 +77,19 @@ inline QString filterWhere(const QVariantList &filters)
     return parts.isEmpty() ? QString() : " WHERE " + parts.join(QString());
 }
 
+// WHERE clause from filters AND a free-text search over `columns` (CAST to CHAR, LIKE %text%).
+inline QString whereClause(const QVariantList &filters, const QString &search, const QStringList &columns)
+{
+    const QString base = filterWhere(filters);   // " WHERE ..." or ""
+    QString text = search;
+    if (text.isEmpty() || columns.isEmpty()) return base;
+    text.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+    const QString lit = literal('%' + text + '%');
+    QStringList ors;
+    for (const QString &c : columns) ors << "CAST(" + quoteId(c) + " AS CHAR) LIKE " + lit;
+    const QString s = '(' + ors.join(" OR ") + ')';
+    if (base.isEmpty()) return " WHERE " + s;
+    return " WHERE (" + base.mid(7) + ") AND " + s;
+}
+
 } // namespace Sql

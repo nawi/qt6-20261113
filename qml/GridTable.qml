@@ -5,7 +5,10 @@ Item {
     id: root
     property var grid: null
     property bool interactive: false
+    property int sortColumn: -1
+    property bool sortDesc: false
     signal cellTapped(int row, int column)
+    signal headerTapped(int column)
 
     readonly property var widths: grid ? grid.widths : []
     readonly property real totalWidth: {
@@ -40,13 +43,20 @@ Item {
                             color: "transparent"
                             Text {
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                width: parent.width - 16
+                                width: parent.width - 16 - (root.sortColumn === index ? 14 : 0)
                                 text: root.grid.headers[index]
                                 color: Theme.text2
                                 font { pixelSize: 12; weight: Font.DemiBold; capitalization: Font.AllUppercase }
                                 elide: Text.ElideRight
                             }
+                            Text {
+                                visible: root.sortColumn === index
+                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: root.sortDesc ? "\u25BE" : "\u25B4"
+                                color: Theme.accent; font.pixelSize: 14
+                            }
                             Rectangle { anchors.right: parent.right; width: 0.5; height: parent.height; color: Theme.sep }
+                            MouseArea { anchors.fill: parent; enabled: root.interactive; onClicked: root.headerTapped(index) }
                         }
                     }
                 }
