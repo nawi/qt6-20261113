@@ -45,16 +45,16 @@ jobs:
         run: |
           sudo apt-get install -y --no-install-recommends openssh-server
           sudo mkdir -p /run/sshd
-          D=/tmp/nawi-ssh && mkdir -p "$D"
+          D="$HOME/nawi-ssh" && mkdir -p "$D" "$HOME/.ssh" && chmod 700 "$D" "$HOME/.ssh"
           ssh-keygen -q -t ed25519 -f "$D/host_key" -N ""
           ssh-keygen -q -t ed25519 -f "$D/client_key" -N ""
-          cp "$D/client_key.pub" "$D/authorized_keys"
-          chmod 600 "$D/authorized_keys" "$D/client_key"
+          cp "$D/client_key.pub" "$HOME/.ssh/authorized_keys"
+          chmod 600 "$HOME/.ssh/authorized_keys" "$D/client_key"
           cat > "$D/sshd_config" <<EOF
           Port 2222
           ListenAddress 127.0.0.1
           HostKey $D/host_key
-          AuthorizedKeysFile $D/authorized_keys
+          AuthorizedKeysFile .ssh/authorized_keys
           PubkeyAuthentication yes
           PasswordAuthentication no
           KbdInteractiveAuthentication no
@@ -66,10 +66,11 @@ jobs:
           sudo /usr/sbin/sshd -f "$D/sshd_config" -E "$D/sshd.log"
       - name: Verify SSH test server
         run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /tmp/nawi-ssh/client_key -p 2222 "$USER"@127.0.0.1 true
+          ls -la "$HOME/.ssh" "$HOME/nawi-ssh"
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$HOME/nawi-ssh/client_key" -p 2222 "$USER"@127.0.0.1 true
       - name: SSH server log on failure
         if: failure()
-        run: sudo cat /tmp/nawi-ssh/sshd.log || true
+        run: sudo cat "$HOME/nawi-ssh/sshd.log" || true
       - name: Build + run QtTest
         env:
           TEST_DB_HOST: 127.0.0.1
@@ -80,7 +81,7 @@ jobs:
           TEST_SSH_HOST: 127.0.0.1
           TEST_SSH_PORT: 2222
           TEST_SSH_USER: runner
-          TEST_SSH_KEY: /tmp/nawi-ssh/client_key
+          TEST_SSH_KEY: /home/runner/nawi-ssh/client_key
         run: |
           cmake -S . -B build-test -GNinja -DCMAKE_BUILD_TYPE=Debug
           cmake --build build-test
