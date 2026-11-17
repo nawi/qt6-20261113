@@ -16,6 +16,7 @@ DbClient::Config cfg() {
     c.password = env("TEST_DB_PASS");
     c.database = env("TEST_DB_NAME", "test");
     c.readTimeout = 20;
+    c.httpEncrypt = true;   // exercise the AES-256-GCM envelope (agent accepts both)
     return c;
 }
 }

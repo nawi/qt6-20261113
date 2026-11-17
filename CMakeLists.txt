@@ -33,7 +33,7 @@ else()
     set(NATIVE_LIBS "${MARIADB_LIB}" OpenSSL::SSL OpenSSL::Crypto "${SSH_BRIDGE_LIB}" dl pthread m)
 endif()
 
-add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp src/DbClient.cpp src/DbSession.cpp src/SshTunnel.cpp src/GridModel.cpp src/Workspace.cpp src/HttpAgent.cpp)
+add_library(core STATIC src/Probe.cpp src/Db.cpp src/Vault.cpp src/AppSettings.cpp src/ConnectionStore.cpp src/Platform.cpp src/DbClient.cpp src/DbSession.cpp src/SshTunnel.cpp src/GridModel.cpp src/Workspace.cpp src/HttpAgent.cpp src/HttpCrypto.cpp)
 target_include_directories(core PUBLIC src ${NATIVE_INCLUDES})
 target_link_libraries(core PUBLIC Qt6::Core Qt6::Sql Qt6::Concurrent Qt6::Network Qt6::Gui ${NATIVE_LIBS})
 target_compile_definitions(core PUBLIC APP_VERSION="${PROJECT_VERSION}")

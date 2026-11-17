@@ -395,7 +395,8 @@ bool DbClient::openHttp(QString *error)
     QJsonObject reply;
     QString err;
     const int t = (m_config.readTimeout > 0 ? m_config.readTimeout : 300);
-    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, agentBody(m_config, "ping"), t, &reply, &err)) {
+    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, agentBody(m_config, "ping"),
+                         m_config.httpEncrypt, t, &reply, &err)) {
         if (error) *error = err;
         return false;
     }
@@ -421,7 +422,7 @@ QueryResult DbClient::queryHttp(const QString &sql, int limit)
     body["limit"] = limit;
     QJsonObject reply;
     QString err;
-    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, body,
+    if (!HttpAgent::post(m_config.httpUrl, m_config.httpToken, body, m_config.httpEncrypt,
                          (m_config.readTimeout > 0 ? m_config.readTimeout : 300) + 15, &reply, &err)) {
         out.error = err;
         out.errorCode = 2013;

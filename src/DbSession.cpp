@@ -120,6 +120,8 @@ void DbSession::buildConfig(const QVariantMap &conn, const QString &host, int po
     if (conn.value("mode").toInt() == 2) {
         m_cfg.httpUrl = conn.value("httpUrl").toString().trimmed();
         m_cfg.httpToken = conn.value("httpToken").toString();
+        // Default on: encrypted envelopes bypass WAFs that block SQL keywords.
+        m_cfg.httpEncrypt = conn.contains("httpEncrypt") ? conn.value("httpEncrypt").toBool() : true;
     }
     m_cfg.connectTimeout = 10;
     m_cfg.readTimeout = qBound(5, Db::get("queryTimeout", "300").toInt(), 3600);

@@ -19,6 +19,7 @@ const F kFields[] = {
     {"sshUser", "ssh_user", false, "", false}, {"sshAuth", "ssh_auth", false, "0", true},
     {"sshSecret", "ssh_secret_enc", true, "", false}, {"sshFp", "ssh_fp", false, "", false},
     {"httpUrl", "http_url", false, "", false}, {"httpToken", "http_token_enc", true, "", false},
+    {"httpEncrypt", "http_encrypt", false, "1", true},
 };
 QString sel() { QStringList c{"id", "last_used"}; for (auto &f : kFields) c << f.col; return c.join(','); }
 bool validPort(const QVariant &v) { int p = v.toInt(); return p >= 1 && p <= 65535; }
@@ -195,6 +196,7 @@ void ConnectionStore::testConnection(const QVariantMap &c)
         if (c.value("mode").toInt() == 2) {
             cfg.httpUrl = c.value("httpUrl").toString().trimmed();
             cfg.httpToken = c.value("httpToken").toString();
+            cfg.httpEncrypt = c.contains("httpEncrypt") ? c.value("httpEncrypt").toBool() : true;
         }
 
         unsigned long long tunnel = 0;

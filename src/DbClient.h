@@ -35,6 +35,7 @@ public:
         bool ssl = false;      // On = encrypted, certificate is NOT verified
         QString httpUrl;       // non-empty = talk to the PHP tunnel agent instead of TCP
         QString httpToken;
+        bool httpEncrypt = false;   // AES-256-GCM envelope (needed behind keyword-blocking WAFs)
         int connectTimeout = 10;
         int readTimeout = 300;
     };

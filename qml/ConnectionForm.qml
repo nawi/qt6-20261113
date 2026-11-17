@@ -10,6 +10,7 @@ Rectangle {
     property int mode: 0
     property int sshAuth: 0
     property bool ssl: false
+    property bool httpEncrypt: true
     property string labelColor: Theme.labelColors[0]
     property string testMessage
     property bool testOk: false
@@ -21,7 +22,7 @@ Rectangle {
             password: fPass.text, database: fDb.text, ssl: ssl, color: labelColor,
             sshHost: fSshHost.text, sshPort: fSshPort.text, sshUser: fSshUser.text, sshAuth: sshAuth,
             sshSecret: sshAuth === 0 ? fSshPass.text : keyArea.text, sshFp: trustedFp,
-            httpUrl: fUrl.text, httpToken: fToken.text
+            httpUrl: fUrl.text, httpToken: fToken.text, httpEncrypt: httpEncrypt
         }
     }
     function load() {
@@ -33,6 +34,7 @@ Rectangle {
         if (sshAuth === 0) fSshPass.text = c.sshSecret; else keyArea.text = c.sshSecret
         trustedFp = c.sshFp || ""
         fUrl.text = c.httpUrl; fToken.text = c.httpToken
+        httpEncrypt = c.httpEncrypt === undefined ? true : (c.httpEncrypt === 1 || c.httpEncrypt === true)
     }
     Component.onCompleted: load()
 
@@ -170,6 +172,12 @@ Rectangle {
                 height: visible ? implicitHeight : 0
                 FieldCell { id: fUrl; title: qsTr("Agent URL"); placeholder: "https://example.com/tunnel.php"; visible: page.mode === 2 }
                 FieldCell { id: fToken; title: qsTr("Token"); secret: true; visible: page.mode === 2 }
+                Cell {
+                    title: qsTr("Encrypt requests")
+                    value: page.httpEncrypt ? qsTr("On") : qsTr("Off")
+                    tappable: false
+                    IOSSwitch { checked: page.httpEncrypt; onToggled: page.httpEncrypt = checked }
+                }
             }
 
             Group {

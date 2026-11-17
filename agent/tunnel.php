@@ -18,9 +18,61 @@ mysqli_report(MYSQLI_REPORT_OFF);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+// ---- AES-256-GCM envelope -------------------------------------------------------
+// WAFs in front of this agent block SQL keywords (e.g. any "WHERE", information_schema).
+// The app can send/receive an encrypted envelope instead: {"v":1,"n":nonce,"d":ct,"t":tag}.
+// Key = HKDF-SHA256(token, info "nawidbman-v1"), 32 bytes. AAD differs per direction.
+global $ENC_KEY;
+$ENC_KEY = null;
+
+function cryptoKey(string $token): string
+{
+    return hash_hkdf('sha256', $token, 32, 'nawidbman-v1');
+}
+
+function seal(array $data, string $key): string
+{
+    $nonce = random_bytes(12);
+    $tag = '';
+    $plain = json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+    $ct = openssl_encrypt($plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $nonce, $tag,
+                          'nawidbman-v1/res', 16);
+    if ($ct === false) return '';
+    return json_encode(['v' => 1, 'n' => base64_encode($nonce),
+                        'd' => base64_encode($ct), 't' => base64_encode($tag)]);
+}
+
+function unseal(array $env, string $key): ?array
+{
+    if ((int)($env['v'] ?? 0) !== 1) return null;
+    $nonce = base64_decode((string)($env['n'] ?? ''), true);
+    $ct = base64_decode((string)($env['d'] ?? ''), true);
+    $tag = base64_decode((string)($env['t'] ?? ''), true);
+    if ($nonce === false || $ct === false || $tag === false || strlen($nonce) !== 12 || strlen($tag) !== 16)
+        return null;
+    $plain = openssl_decrypt($ct, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $nonce, $tag,
+                             'nawidbman-v1/req');
+    if ($plain === false) return null;
+    $req = json_decode($plain, true);
+    if (!is_array($req)) return null;
+    $ts = (int)($req['t'] ?? 0);
+    if ($ts <= 0 || abs(time() - $ts) > 300) return null;   // anti-replay
+    unset($req['t']);
+    return $req;
+}
+
 function out(array $data, int $status = 200): void
 {
+    global $ENC_KEY;
     http_response_code($status);
+    if ($ENC_KEY !== null) {
+        $sealed = seal($data, $ENC_KEY);
+        if ($sealed !== '') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo $sealed;
+            exit;
+        }
+    }
     echo json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
     exit;
 }
@@ -65,6 +117,18 @@ if (!hash_equals($token, (string)($_SERVER['HTTP_X_NAWI_TOKEN'] ?? ''))) fail(40
 
 $req = json_decode((string)file_get_contents('php://input'), true);
 if (!is_array($req)) fail(400, -1, 'Invalid JSON body');
+if (isset($req['v'])) {
+    // Encrypted envelope: authenticate with the same shared token, then decrypt.
+    $ENC_KEY = cryptoKey($token);
+    $plain = unseal($req, $ENC_KEY);
+    if ($plain === null) {
+        $ENC_KEY = null;   // reply in plaintext: the caller may not share our key
+        fail(400, -1, 'Cannot decrypt request (token mismatch or stale timestamp)');
+    }
+    $req = $plain;
+} else {
+    $ENC_KEY = null;   // legacy plaintext client
+}
 
 $action = $req['action'] ?? '';
 $db = is_array($req['db'] ?? null) ? $req['db'] : [];

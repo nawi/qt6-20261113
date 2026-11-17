@@ -24,6 +24,8 @@ static const QStringList kMigrations = {
     " pos INTEGER NOT NULL DEFAULT 0);"
     "CREATE TABLE query_history(id INTEGER PRIMARY KEY AUTOINCREMENT, conn_id INTEGER NOT NULL,"
     " sql TEXT NOT NULL, ts INTEGER NOT NULL);",
+    // v3: encrypted HTTP envelope (default on; WAFs may block plaintext SQL)
+    "ALTER TABLE connections ADD COLUMN http_encrypt INTEGER NOT NULL DEFAULT 1;",
 };
 
 bool Db::open(const QString &path)
