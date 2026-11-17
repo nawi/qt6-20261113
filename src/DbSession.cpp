@@ -4,6 +4,7 @@
 #include "Sql.h"
 #include <QThread>
 #include <QtConcurrent>
+#include <algorithm>
 
 namespace {
 QVariantMap errorMap(const QString &error, int code = -1)
@@ -52,17 +53,26 @@ QString pkWhere(DbClient &db, const QVariantMap &pk)
 
 QStringList loadPrimaryKey(DbClient &db, const QString &database, const QString &table, QString *error)
 {
-    QueryResult r = db.query("SHOW KEYS FROM " + Sql::qualified(database, table)
-                                 + " WHERE Key_name='PRIMARY'", -1);
+    // No WHERE clause on purpose: WAFs in front of the PHP agent (nginx) return HTTP 403 for
+    // "SHOW ... WHERE ..." and for information_schema.STATISTICS. One table's index list is
+    // small, so filter locally instead.
+    QueryResult r = db.query("SHOW KEYS FROM " + Sql::qualified(database, table), -1);
     if (!r.ok()) {
         if (error) *error = r.error;
         return {};
     }
-    QStringList pk;
     // Columns: Table, Non_unique, Key_name, Seq_in_index, Column_name, ...
+    QList<QPair<int, QString>> cols;
     for (const QVariantList &row : r.rows) {
-        if (row.size() > 4 && !row[4].isNull()) pk << row[4].toString();
+        if (row.size() <= 4 || row[4].isNull()) continue;
+        if (row[2].toString().compare(QStringLiteral("PRIMARY"), Qt::CaseInsensitive) != 0) continue;
+        cols.append({row[3].toInt(), row[4].toString()});
     }
+    std::sort(cols.begin(), cols.end(),
+              [](const QPair<int, QString> &a, const QPair<int, QString> &b) { return a.first < b.first; });
+    QStringList pk;
+    pk.reserve(cols.size());
+    for (const auto &c : cols) pk << c.second;
     return pk;
 }
 }
